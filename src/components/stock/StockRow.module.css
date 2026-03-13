@@ -1,0 +1,79 @@
+.row {
+  display: flex;
+  align-items: center;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s;
+  gap: 8px;
+}
+.row:hover {
+  background: var(--bg-2);
+}
+.row:active {
+  background: var(--bg-3);
+}
+
+.flashUp {
+  animation: pulse-green 0.5s ease;
+}
+.flashDown {
+  animation: pulse-red 0.5s ease;
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+}
+.name {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.code {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-num);
+  margin-top: 2px;
+}
+
+.nums {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  min-width: 90px;
+}
+.price {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+.change {
+  font-size: 12px;
+}
+.vol {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.star {
+  font-size: 16px;
+  color: var(--text-muted);
+  padding: 4px 6px;
+  transition:
+    color 0.2s,
+    transform 0.15s;
+  flex-shrink: 0;
+}
+.star:hover {
+  color: var(--yellow);
+  transform: scale(1.2);
+}
+.starred {
+  color: var(--yellow);
+}

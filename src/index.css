@@ -1,0 +1,156 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg-0: #08090d;
+  --bg-1: #0e0f14;
+  --bg-2: #13151c;
+  --bg-3: #1a1d27;
+  --border: #22263a;
+  --border-light: #2a2f45;
+
+  --text-primary: #e2e6f0;
+  --text-secondary: #7a8099;
+  --text-muted: #44495e;
+
+  --green: #00d17a;
+  --green-dim: rgba(0, 209, 122, 0.12);
+  --green-glow: rgba(0, 209, 122, 0.25);
+  --red: #ff3d5a;
+  --red-dim: rgba(255, 61, 90, 0.12);
+  --red-glow: rgba(255, 61, 90, 0.25);
+
+  --blue: #3d8bff;
+  --blue-dim: rgba(61, 139, 255, 0.12);
+  --yellow: #f5a623;
+
+  --font-num: 'DM Mono', monospace;
+  --font-body: 'Noto Sans KR', sans-serif;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  --topbar-h: 56px;
+  --bottomnav-h: 64px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  background: var(--bg-0);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+  border: none;
+  outline: none;
+  background: none;
+}
+
+input {
+  font-family: var(--font-body);
+  outline: none;
+}
+
+a { text-decoration: none; color: inherit; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 2px; }
+
+/* Utility classes */
+.num { font-family: var(--font-num); }
+.up { color: var(--red); }
+.down { color: var(--blue); }
+.flat { color: var(--text-secondary); }
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes pulse-green {
+  0%, 100% { background: transparent; }
+  50%       { background: var(--green-dim); }
+}
+@keyframes pulse-red {
+  0%, 100% { background: transparent; }
+  50%       { background: var(--red-dim); }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.fade-in { animation: fadeIn 0.3s ease forwards; }
+
+.price-flash-up { animation: pulse-green 0.5s ease; }
+.price-flash-down { animation: pulse-red 0.5s ease; }
+
+/* Page container */
+.page {
+  min-height: 100dvh;
+  padding-top: var(--topbar-h);
+  padding-bottom: var(--bottomnav-h);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Card */
+.card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+/* Section header */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding: 0 16px;
+}
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Loading spinner */
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border-light);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 40px auto;
+}
+
+/* Overlay */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+}

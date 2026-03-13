@@ -1,0 +1,83 @@
+.card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+.card:hover {
+  border-color: var(--border-light);
+  background: var(--bg-3);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+.name {
+  font-size: 14px;
+  font-weight: 600;
+}
+.code {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-num);
+  margin-top: 2px;
+}
+
+.pnlBadge {
+  font-family: var(--font-num);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+.pnlBadge.up {
+  color: var(--red);
+  background: var(--red-dim);
+}
+.pnlBadge.down {
+  color: var(--blue);
+  background: var(--blue-dim);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.val {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.pnlRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 600;
+}
+.pnlRow.up {
+  color: var(--red);
+}
+.pnlRow.down {
+  color: var(--blue);
+}

@@ -1,0 +1,73 @@
+.wrap {
+  width: 100%;
+}
+.empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 40px 0;
+  font-size: 13px;
+}
+.tooltip {
+  background: var(--bg-3);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+}
+.ttName {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 3px;
+}
+.ttVal {
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-num);
+}
+.legendLabel {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 4px;
+}
+.item {
+  display: grid;
+  grid-template-columns: 20px 1fr 60px 80px 36px;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.rank {
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 13px;
+  text-align: center;
+}
+.itemName {
+  font-weight: 500;
+}
+.itemCode {
+  font-family: var(--font-num);
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.barWrap {
+  background: var(--bg-3);
+  border-radius: 2px;
+  height: 4px;
+  overflow: hidden;
+}
+.bar {
+  height: 100%;
+  border-radius: 2px;
+  min-width: 2px;
+}
+.pct {
+  font-family: var(--font-num);
+  color: var(--text-secondary);
+  text-align: right;
+}

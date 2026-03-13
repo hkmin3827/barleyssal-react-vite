@@ -1,0 +1,5 @@
+.chart {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
