@@ -88,9 +88,9 @@ export function wsSend(msg) {
 }
 
 export function useWebSocket(options = {}) {
-  const { stocks = ALL_CODES, subscribeAccount = true } = options;
+  const { stocks = [], subscribeAccount = true } = options;
 
-  const { updatePrice, updateMkopCode, setPnlData, addExecution } =
+  const { updatePrice, updateMkopCode, setPnlData, addExecution, setRanking } =
     useMarketStore();
   const { user } = useAuthStore();
   const stocksRef = useRef(stocks);
@@ -101,9 +101,13 @@ export function useWebSocket(options = {}) {
 
     const handler = (msg) => {
       switch (msg.type) {
+        case "ranking": {
+          setRanking(msg.data);
+          break;
+        }
         case "__WS_OPEN__": {
           if (stocksRef.current.length) {
-            wsSend({ type: "SUBSCRIBE_PRICE", stocks: stocksRef.current });
+            wsSend({ type: "SUBSCRIBE_PRICE", symbols: stocksRef.current });
           }
           if (subscribeAccount && user?.id) {
             wsSend({ type: "SUBSCRIBE_ACCOUNT", userId: String(user.id) });
@@ -158,9 +162,25 @@ export function useWebSocket(options = {}) {
     }
   }, [JSON.stringify(stocks)]);
 
+  // useEffect(() => {
+  //   if (subscribeAccount && user?.id && wsInstance?.readyState === 1) {
+  //     wsSend({ type: "SUBSCRIBE_ACCOUNT", userId: String(user.id) });
+  //   }
+  // }, [subscribeAccount, user?.id]);
   useEffect(() => {
-    if (subscribeAccount && user?.id && wsInstance?.readyState === 1) {
-      wsSend({ type: "SUBSCRIBE_ACCOUNT", userId: String(user.id) });
+    stocksRef.current = stocks;
+    if (wsInstance?.readyState === WebSocket.OPEN) {
+      if (stocks.length > 0) {
+        wsSend({ type: "SUBSCRIBE_PRICE", symbols: stocks });
+      }
     }
-  }, [subscribeAccount, user?.id]);
+
+    // 컴포넌트 언마운트 시 실행되는 클린업 함수
+    return () => {
+      if (wsInstance?.readyState === WebSocket.OPEN && stocks.length > 0) {
+        // 빈 배열을 보내 서버의 기존 구독 목록을 완전히 초기화
+        wsSend({ type: "SUBSCRIBE_PRICE", symbols: [] });
+      }
+    };
+  }, [JSON.stringify(stocks)]);
 }

@@ -6,6 +6,25 @@ const spring = axios.create({
   timeout: 10000,
 });
 
+const getCookie = (name) => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(";").shift();
+};
+
+spring.interceptors.request.use((config) => {
+  const csrfToken = getCookie("XSRF-TOKEN");
+  if (
+    csrfToken &&
+    (config.method === "post" ||
+      config.method === "put" ||
+      config.method === "delete")
+  ) {
+    config.headers["X-XSRF-TOKEN"] = csrfToken;
+  }
+  return config;
+});
+
 // 401 → 세션 만료 처리
 spring.interceptors.response.use(
   (r) => r,

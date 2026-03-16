@@ -1,5 +1,9 @@
-.chart {
+.wrap {
   width: 100%;
-  border-radius: var(--radius-sm);
-  overflow: hidden;
+}
+.empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 40px 0;
+  font-size: 14px;
 }

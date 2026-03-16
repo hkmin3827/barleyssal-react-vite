@@ -1,0 +1,201 @@
+.page {
+  min-height: 100dvh;
+  padding-top: var(--topbar-h);
+  padding-bottom: calc(var(--bottomnav-h) + 12px);
+  background: var(--bg);
+}
+.inner {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 20px;
+}
+.pageHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+.subLabel {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* 탭 */
+.tabBar {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+  overflow-x: auto;
+  padding-bottom: 0;
+}
+.tab {
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+.tab:hover {
+  color: var(--text-primary);
+}
+.tabActive {
+  color: var(--blue) !important;
+  border-bottom-color: var(--blue);
+  font-weight: 600;
+}
+
+/* 카드 */
+.card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  padding: 24px;
+}
+.cardHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cardTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.cardSub {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* 파이 리스트 */
+.listGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+.listItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.listRank {
+  font-size: 14px;
+  font-weight: 700;
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.listInfo {
+  width: 120px;
+  flex-shrink: 0;
+}
+.listName {
+  font-size: 13px;
+  font-weight: 500;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.listCode {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.listBarWrap {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-subtle);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.listBar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s;
+}
+.listPct {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  width: 42px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* 수익률 TOP 리스트 */
+.profitList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.profitRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 8px;
+  border-radius: var(--radius-md);
+  transition: background 0.12s;
+  cursor: default;
+}
+.profitRow:hover {
+  background: var(--bg-subtle);
+}
+.profitRank {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.profitInfo {
+  flex: 1;
+  min-width: 0;
+}
+.profitUser {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.profitCode {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.profitRight {
+  text-align: right;
+}
+.profitRate {
+  font-size: 16px;
+  font-weight: 700;
+}
+.profitDetail {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 60px 0;
+  font-size: 14px;
+}

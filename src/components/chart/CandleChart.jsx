@@ -38,23 +38,29 @@ export default function CandleChart({
         background: { color: "transparent" },
         textColor: "#7a8099",
       },
-      grid: {
-        vertLines: { color: "#1a1d27" },
-        horzLines: { color: "#1a1d27" },
-      },
       crosshair: { mode: 1 },
       rightPriceScale: {
         borderColor: "#22263a",
         scaleMargins: { top: 0.1, bottom: 0.3 },
       },
       timeScale: {
+        barSpacing: 12,
+        rightOffset: 5,
         borderColor: "#22263a",
         timeVisible: mode === "intraday",
         secondsVisible: false,
+        fixLeftEdge: true,
+        // fixRightEdge: true,
+      },
+      localization: {
+        timeFormatter: (tick) => {
+          // tick은 Unix 타임스탬프(초)입니다.
+          // new Date(ms) 객체는 생성 시점의 브라우저 로컬 타임존을 따릅니다.
+          return new Date(tick * 1000).toLocaleString();
+        },
       },
     });
 
-    // Candle series
     const candleSeries = chart.addSeries(CandlestickSeries, {
       upColor: "#ff3d5a",
       downColor: "#3d8bff",
@@ -64,7 +70,6 @@ export default function CandleChart({
       wickDownColor: "#3d8bff",
     });
 
-    // Volume series
     const volSeries = chart.addSeries(HistogramSeries, {
       priceFormat: { type: "volume" },
       priceScaleId: "vol",
@@ -77,7 +82,6 @@ export default function CandleChart({
     candleRef.current = candleSeries;
     volRef.current = volSeries;
 
-    // Resize observer
     const ro = new ResizeObserver(() => {
       if (containerRef.current && chartRef.current) {
         chartRef.current.applyOptions({
@@ -89,7 +93,6 @@ export default function CandleChart({
     chart._roCleanup = () => ro.disconnect();
   }, [height, mode]);
 
-  // Init chart
   useEffect(() => {
     buildSeries();
     return () => {
@@ -101,7 +104,6 @@ export default function CandleChart({
     };
   }, [buildSeries]);
 
-  // Update data
   useEffect(() => {
     if (!candleRef.current || !volRef.current || !data.length) return;
 
@@ -111,16 +113,23 @@ export default function CandleChart({
     for (const bar of data) {
       let time;
       if (mode === "intraday") {
-        // timestamp is Unix ms → convert to Unix seconds (LWC v5 uses seconds)
         time = bar.timestamp
           ? Math.floor(bar.timestamp / 1000)
           : parseIntraTime(bar.t);
       } else {
-        // date = 'YYYYMMDD' → 'YYYY-MM-DD'
+        // [수정 포인트] 일봉(period) 모드 날짜 파싱
         const d = bar.date || bar.t || "";
-        time = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
-      }
 
+        if (d.includes("-")) {
+          // 1. 이미 'YYYY-MM-DD' 형식인 경우 (수정된 Go 서버 데이터)
+          time = d;
+        } else if (d.length >= 8) {
+          // 2. 'YYYYMMDD' 형식인 경우 (기존 노드 서버 또는 API 원본)
+          time = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
+        } else {
+          continue; // 날짜 형식이 잘못된 데이터는 스킵
+        }
+      }
       if (!time) continue;
 
       const o = Number(bar.o ?? bar.open ?? 0);
@@ -140,7 +149,17 @@ export default function CandleChart({
     if (!candles.length) return;
     candleRef.current.setData(candles);
     volRef.current.setData(vols);
-    chartRef.current?.timeScale().fitContent();
+
+    const timeScale = chartRef.current.timeScale();
+    const VISIBLE_CANDLES = 30;
+    if (candles.length > VISIBLE_CANDLES) {
+      timeScale.setVisibleLogicalRange({
+        from: candles.length - VISIBLE_CANDLES,
+        to: candles.length - 1, // 우측 맨 끝(최신 데이터)
+      });
+    } else {
+      timeScale.fitContent(); // 데이터가 60개도 안 되면 그냥 다 보여줌
+    }
   }, [data, mode]);
 
   return <div ref={containerRef} className={styles.chart} style={{ height }} />;

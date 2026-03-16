@@ -1,209 +1,290 @@
 .page {
   min-height: 100dvh;
   padding-top: var(--topbar-h);
-  padding-bottom: calc(var(--bottomnav-h) + 16px);
-  max-width: 600px;
+  padding-bottom: calc(var(--bottomnav-h) + 12px);
+  background: var(--bg);
+}
+.inner {
+  max-width: 1280px;
   margin: 0 auto;
+  padding: 24px 20px;
 }
-
-.summaryCard {
-  background: linear-gradient(145deg, var(--bg-2) 0%, var(--bg-1) 100%);
-  border-bottom: 1px solid var(--border);
-  padding: 24px 20px 20px;
-}
-.summaryTop {
-  margin-bottom: 6px;
-}
-.summaryLabel {
-  font-size: 12px;
-  color: var(--text-muted);
-  display: block;
-  margin-bottom: 6px;
-}
-.equityVal {
-  font-size: 30px;
-  font-weight: 500;
-  letter-spacing: -0.03em;
+.title {
+  font-size: 26px;
+  font-weight: 700;
   color: var(--text-primary);
-  display: block;
+  margin-bottom: 20px;
+  letter-spacing: -0.02em;
 }
 
-.pnlRow {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
+.summaryGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
   margin-bottom: 20px;
 }
-.pnlRate {
-  font-size: 18px;
-  font-weight: 700;
+@media (min-width: 640px) {
+  .summaryGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
-.pnlAmt {
-  font-size: 14px;
+@media (min-width: 1024px) {
+  .summaryGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
-.statsGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  padding: 16px;
-  background: var(--bg-0);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  margin-bottom: 14px;
+/* 파란 총자산 카드 */
+.totalCard {
+  background: var(--blue);
+  border-radius: var(--radius-lg);
+  padding: 22px 20px;
+  color: #fff;
+  grid-column: 1;
 }
-.statItem {
+@media (min-width: 1024px) {
+  .totalCard {
+    grid-column: span 1;
+  }
+}
+.totalLabel {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.statLabel {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-.statItem span:last-child {
+  align-items: center;
+  gap: 6px;
   font-size: 13px;
-  font-weight: 500;
+  opacity: 0.88;
+  margin-bottom: 8px;
+}
+.totalValue {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-bottom: 4px;
+}
+.totalSub {
+  font-size: 13px;
+  opacity: 0.8;
 }
 
+/* 일반 정보 카드 */
+.infoCard {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 22px 20px;
+}
+.infoCardLabel {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+.infoCardValue {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  letter-spacing: -0.02em;
+}
+.infoCardSub {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* 원금 설정 */
 .setPrinBtn {
+  margin-top: 10px;
   font-size: 12px;
-  color: var(--text-muted);
-  border: 1px dashed var(--border-light);
-  border-radius: var(--radius-sm);
-  padding: 7px 14px;
-  width: 100%;
-  transition: all 0.2s;
+  color: var(--blue);
+  padding: 5px 10px;
+  border: 1px solid var(--blue-200);
+  border-radius: 6px;
+  background: var(--blue-50);
+  transition: background 0.15s;
 }
 .setPrinBtn:hover {
-  color: var(--text-primary);
-  border-color: var(--text-muted);
+  background: var(--blue-100);
 }
-
-.prinForm {
-  margin-top: 12px;
+.setPrinWrap {
+  margin-top: 10px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
-.prinInput {
-  background: var(--bg-0);
+.setPrinInput {
+  width: 100%;
+  padding: 8px 10px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
+  border-radius: var(--radius-md);
   font-size: 14px;
   color: var(--text-primary);
-  width: 100%;
-  font-family: var(--font-num);
 }
-.prinInput:focus {
-  border-color: var(--green);
+.setPrinInput:focus {
+  border-color: var(--blue);
 }
-.prinError {
+.setPrinError {
   font-size: 12px;
   color: var(--red);
 }
-.prinBtns {
+.setPrinBtns {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
-.prinCancel {
+.cancelBtn {
   flex: 1;
-  padding: 10px;
+  padding: 7px;
+  font-size: 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  font-size: 13px;
   color: var(--text-secondary);
+  background: var(--white);
 }
-.prinConfirm {
-  flex: 2;
-  padding: 10px;
-  background: var(--green);
-  color: #000;
+.confirmBtn {
+  flex: 1;
+  padding: 7px;
+  font-size: 12px;
+  background: var(--blue);
+  color: #fff;
   border-radius: var(--radius-sm);
-  font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
-.prinConfirm:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.confirmBtn:disabled {
+  opacity: 0.6;
 }
 
+/* 자산 분포 */
 .section {
-  padding: 16px 0;
-  border-bottom: 1px solid var(--border);
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 22px 20px;
+  margin-bottom: 20px;
 }
-.section:last-child {
-  border-bottom: none;
-}
-.sectionHead {
+.sectionHeader {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 16px 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
 }
+.distGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+@media (min-width: 640px) {
+  .distGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+.distItem {
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+.distName {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.distPct {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.distAmt {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* 보유 종목 */
 .sectionTitle {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 14px;
+}
+.holdingGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 640px) {
+  .holdingGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .holdingGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.holdingCard {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+.holdingCard:hover {
+  box-shadow: var(--shadow-md);
+}
+.holdingTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+.holdingName {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.holdingCode {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.holdingRight {
+  text-align: right;
+}
+.holdingPrice {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.holdingRate {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  margin-top: 2px;
 }
-.holdCount {
-  font-family: var(--font-num);
-  font-size: 11px;
-  background: var(--bg-3);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 1px 7px;
-  color: var(--text-muted);
-}
-
-.execList {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-.execRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  font-size: 13px;
-  border-bottom: 1px solid var(--border);
-}
-.execRow:last-child {
-  border-bottom: none;
-}
-.execSide {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 20px;
-}
-.buy {
-  background: var(--red-dim);
-  color: var(--red);
-}
-.sell {
-  background: var(--blue-dim);
-  color: var(--blue);
-}
-.execCode {
-  font-family: var(--font-num);
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.holdingGrid {
+.holdingDetails {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 0 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.holdingDetail {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+.holdingDetail span:first-child {
+  color: var(--text-secondary);
+}
+.holdingDetail span:last-child {
+  font-weight: 500;
+  color: var(--text-primary);
 }
 .empty {
   text-align: center;
   color: var(--text-muted);
-  font-size: 13px;
-  padding: 32px;
+  padding: 60px 0;
 }

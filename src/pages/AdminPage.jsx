@@ -8,30 +8,28 @@ import {
 } from "../components/stats/AdminCharts";
 import styles from "./AdminPage.module.css";
 
-/** Elasticsearch aggregation → chart-ready array */
-function parseHourly(rawData) {
+function parseHourly(raw) {
   try {
-    // ES aggregation raw data — try to extract hourly buckets
-    // rawData.hourlyData may be aggregations object
-    const agg = rawData?.hourlyData;
+    const agg = raw?.hourlyData;
     if (!agg) return [];
-    // Iterate simple aggregation buckets if already serialised
     const hourly = agg?.hourly_trades?.buckets ?? agg?.buckets ?? [];
     return hourly.map((b) => {
-      const hour = (b.key_as_string ?? b.key ?? "").slice(11, 16); // HH:mm
+      const hour = (b.key_as_string ?? b.key ?? "").slice(11, 16);
       const sides = b.by_side?.buckets ?? [];
-      const buy = sides.find((s) => s.key === "BUY")?.doc_count ?? 0;
-      const sell = sides.find((s) => s.key === "SELL")?.doc_count ?? 0;
-      return { hour, BUY: buy, SELL: sell };
+      return {
+        hour,
+        BUY: sides.find((s) => s.key === "BUY")?.doc_count ?? 0,
+        SELL: sides.find((s) => s.key === "SELL")?.doc_count ?? 0,
+      };
     });
   } catch {
     return [];
   }
 }
 
-function parseDaily(rawData) {
+function parseDaily(raw) {
   try {
-    const agg = rawData?.dailyEfficiency;
+    const agg = raw?.dailyEfficiency;
     if (!agg) return [];
     const daily = agg?.daily_stats?.buckets ?? agg?.buckets ?? [];
     return daily.map((b) => ({
@@ -46,7 +44,6 @@ function parseDaily(rawData) {
 export default function AdminPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-
   const [hourlyData, setHourlyData] = useState([]);
   const [dailyData, setDailyData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -67,39 +64,29 @@ export default function AdminPage() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
-        <button className={styles.back} onClick={() => navigate(-1)}>
-          ←
-        </button>
-        <span className={styles.title}>관리자 통계</span>
-        <span className={styles.badge}>14일</span>
-      </div>
-
-      {loading ? (
-        <div className="spinner" style={{ marginTop: 60 }} />
-      ) : (
-        <>
-          <section className={styles.section}>
-            <div className={styles.sectionHead}>
-              <span className={styles.sectionTitle}>
-                시간대별 매수·매도 건수
-              </span>
-            </div>
-            <div className={styles.card}>
+      <div className={styles.inner}>
+        <div className={styles.header}>
+          <button className={styles.back} onClick={() => navigate(-1)}>
+            ← 뒤로
+          </button>
+          <span className={styles.title}>관리자 통계</span>
+          <span className={styles.badge}>14일</span>
+        </div>
+        {loading ? (
+          <div className="spinner" />
+        ) : (
+          <div className={styles.grid}>
+            <div className={styles.section}>
+              <div className={styles.sectionTitle}>시간대별 매수·매도 건수</div>
               <HourlyVolumeChart data={hourlyData} />
             </div>
-          </section>
-
-          <section className={styles.section}>
-            <div className={styles.sectionHead}>
-              <span className={styles.sectionTitle}>일별 체결 건수</span>
-            </div>
-            <div className={styles.card}>
+            <div className={styles.section}>
+              <div className={styles.sectionTitle}>일별 체결 건수</div>
               <DailyEfficiencyChart data={dailyData} />
             </div>
-          </section>
-        </>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

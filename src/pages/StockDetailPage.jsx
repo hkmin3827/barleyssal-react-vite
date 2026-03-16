@@ -3,18 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useMarketStore } from "../store/marketStore";
 import { useWatchlistStore } from "../store/watchlistStore";
 import { getStockName } from "../constants/stocks";
-import { getIntradayChart, getPeriodChart } from "../api/nodeApi";
+import { getIntradayChart, getPeriodChart } from "../api/goApi";
 import CandleChart from "../components/chart/CandleChart";
-import OrderDrawer from "../components/order/OrderDrawer";
-import {
-  fmtPrice,
-  fmtPct,
-  fmtVol,
-  fmtMoney,
-  prdySign,
-  signStr,
-} from "../utils/format";
+import OrderPanel from "../components/order/OrderPanel";
+import { fmtPrice, fmtPct, fmtVol, prdySign, signStr } from "../utils/format";
 import styles from "./StockDetailPage.module.css";
+import { useWebSocket } from "../hooks/useWebSocket";
 
 const INTRADAY_TFS = ["1m", "5m", "10m", "30m"];
 const PERIOD_TFS = ["D", "W", "M", "Y"];
@@ -29,30 +23,67 @@ const TF_LABELS = {
   Y: "년",
 };
 
+function TrendIcon({ up }) {
+  return up ? (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+      <polyline points="17 6 23 6 23 12" />
+    </svg>
+  ) : (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
+      <polyline points="17 18 23 18 23 12" />
+    </svg>
+  );
+}
+
 export default function StockDetailPage() {
   const { code } = useParams();
+  useWebSocket({ stocks: [code], subscribeAccount: false });
   const navigate = useNavigate();
   const tick = useMarketStore((s) => s.prices[code]);
   const isOpen = useMarketStore((s) => s.isMarketOpen(code));
   const isWatched = useWatchlistStore((s) => s.isWatched(code));
   const toggle = useWatchlistStore((s) => s.toggle);
 
-  const [tf, setTf] = useState("1m"); // active timeframe
+  const [tf, setTf] = useState("1m");
   const [chartData, setChartData] = useState([]);
-  const [chartMode, setChartMode] = useState("intraday"); // 'intraday'|'period'
+  const [chartMode, setChartMode] = useState("intraday");
   const [chartLoading, setChartLoading] = useState(false);
-  const [drawer, setDrawer] = useState(null); // null | 'BUY' | 'SELL'
   const [orderDone, setOrderDone] = useState(null);
 
   const name = getStockName(code);
+  const dir = prdySign(tick?.prdyVrssSign);
+  const priceColor =
+    dir === "up"
+      ? "var(--red)"
+      : dir === "down"
+        ? "var(--blue)"
+        : "var(--text-secondary)";
 
-  // --- Chart fetch ---
   const fetchChart = useCallback(
     async (timeframe) => {
       setChartLoading(true);
       try {
-        const isPeriod = PERIOD_TFS.includes(timeframe);
-        if (isPeriod) {
+        if (PERIOD_TFS.includes(timeframe)) {
           const res = await getPeriodChart(code, timeframe);
           setChartData(res?.data ?? []);
           setChartMode("period");
@@ -74,23 +105,6 @@ export default function StockDetailPage() {
     fetchChart(tf);
   }, [tf, fetchChart]);
 
-  // Append realtime candle tick to intraday chart
-  const prevTickRef = useRef(null);
-  useEffect(() => {
-    if (chartMode !== "intraday" || !tick) return;
-    if (prevTickRef.current === tick) return;
-    prevTickRef.current = tick;
-    // Just refetch at most every 10 s (simple approach)
-  }, [tick, chartMode]);
-
-  const dir = prdySign(tick?.prdyVrssSign);
-  const color =
-    dir === "up"
-      ? "var(--red)"
-      : dir === "down"
-        ? "var(--blue)"
-        : "var(--text-secondary)";
-
   const handleOrderSuccess = (result) => {
     setOrderDone(`주문 접수 완료 (${result?.orderStatus ?? "PENDING"})`);
     setTimeout(() => setOrderDone(null), 4000);
@@ -98,179 +112,155 @@ export default function StockDetailPage() {
 
   return (
     <div className={styles.page}>
-      {/* ── Top bar area ── */}
-      <div className={styles.topArea}>
+      {/* 뒤로가기 헤더 */}
+      <div className={styles.header}>
         <button className={styles.backBtn} onClick={() => navigate(-1)}>
-          ←
-        </button>
-        <div className={styles.titleGroup}>
-          <span className={styles.stockName}>{name}</span>
-          <span className={styles.stockCode}>{code}</span>
-        </div>
-        <button
-          className={`${styles.starBtn} ${isWatched ? styles.starred : ""}`}
-          onClick={() => toggle(code, name)}
-        >
-          ★
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          종목 목록
         </button>
       </div>
 
-      {/* ── Price hero ── */}
-      <div className={styles.priceHero}>
-        <div className={styles.currentPrice} style={{ color }}>
-          <span className="num">{tick ? fmtPrice(tick.price) : "—"}</span>
-          <span className={styles.won}>원</span>
-        </div>
-        <div className={styles.priceRow2}>
-          <span className={`${styles.change} num`} style={{ color }}>
-            {tick
-              ? `${signStr(tick.prdyVrssSign)} ${fmtPrice(tick.prdyVrss)}`
-              : "—"}
-          </span>
-          <span className={`${styles.changePct} num`} style={{ color }}>
-            {tick ? fmtPct(tick.prdyCtrt) : "—"}
-          </span>
-        </div>
+      {/* 메인 레이아웃: 좌측 + 우측(주문) */}
+      <div className={styles.layout}>
+        {/* 좌측: 종목정보 + 차트 */}
+        <div className={styles.leftCol}>
+          {/* 종목 헤더 카드 */}
+          <div className={styles.infoCard}>
+            <div className={styles.infoTop}>
+              <div>
+                <div className={styles.stockName}>{name}</div>
+                <div className={styles.stockCode}>{code}</div>
+              </div>
+              <button
+                className={`${styles.watchBtn} ${isWatched ? styles.watched : ""}`}
+                onClick={() => toggle(code, name)}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill={isWatched ? "currentColor" : "none"}
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+              </button>
+            </div>
 
-        {/* Extra stats row */}
-        <div className={styles.statsRow}>
-          <div className={styles.stat}>
-            <span className={styles.statL}>누적거래량</span>
-            <span className="num">{tick ? fmtVol(tick.acmlVol) : "—"}</span>
+            <div className={styles.priceSection}>
+              <div
+                className={styles.currentPrice}
+                style={{ color: priceColor }}
+              >
+                {tick ? `${tick.price.toLocaleString()}원` : "—"}
+              </div>
+              {tick && (
+                <div
+                  className={styles.priceChange}
+                  style={{ color: priceColor }}
+                >
+                  <TrendIcon up={dir === "up"} />
+                  {signStr(tick.prdyVrssSign)}
+                  {fmtPrice(tick.prdyVrss)}원 ({fmtPct(tick.prdyCtrt)})
+                </div>
+              )}
+            </div>
+
+            <div className={styles.separator} />
+
+            {/* 4열 stats 그리드 */}
+            <div className={styles.statsGrid}>
+              {[
+                ["시가", tick?.stckOprc, null],
+                ["고가", tick?.stckHgpr, "var(--red)"],
+                ["저가", tick?.stckLwpr, "var(--blue)"],
+                [
+                  "누적 거래량",
+                  tick?.acmlVol ? `${tick.acmlVol.toLocaleString()}주` : null,
+                  null,
+                ],
+              ].map(
+                ([label, val, color]) =>
+                  val != null && (
+                    <div key={label} className={styles.statItem}>
+                      <div className={styles.statLabel}>{label}</div>
+                      <div
+                        className={styles.statValue}
+                        style={color ? { color } : {}}
+                      >
+                        {typeof val === "number"
+                          ? `${val.toLocaleString()}원`
+                          : val}
+                      </div>
+                    </div>
+                  ),
+              )}
+            </div>
           </div>
-          {tick?.askp1 && (
-            <div className={styles.stat}>
-              <span className={styles.statL}>매도호가</span>
-              <span className="num up">{fmtPrice(tick.askp1)}</span>
+
+          {/* 차트 카드 */}
+          <div className={styles.chartCard}>
+            <h3 className={styles.chartTitle}>가격 차트</h3>
+            <div className={styles.tfRow}>
+              {[...INTRADAY_TFS, ...PERIOD_TFS].map((t) => (
+                <button
+                  key={t}
+                  className={`${styles.tfBtn} ${tf === t ? styles.tfActive : ""}`}
+                  onClick={() => setTf(t)}
+                >
+                  {TF_LABELS[t]}
+                </button>
+              ))}
             </div>
-          )}
-          {tick?.bidp1 && (
-            <div className={styles.stat}>
-              <span className={styles.statL}>매수호가</span>
-              <span className="num down">{fmtPrice(tick.bidp1)}</span>
+            <div className={styles.chartBox}>
+              {chartLoading ? (
+                <div className="spinner" />
+              ) : chartData.length === 0 ? (
+                <div className={styles.noData}>차트 데이터가 없습니다.</div>
+              ) : (
+                <CandleChart data={chartData} mode={chartMode} height={280} />
+              )}
             </div>
-          )}
-          {tick?.wghnAvrgStckPrc && (
-            <div className={styles.stat}>
-              <span className={styles.statL}>가중평균가</span>
-              <span className="num">{fmtPrice(tick.wghnAvrgStckPrc)}</span>
-            </div>
-          )}
-          {tick?.stckOprc && (
-            <div className={styles.stat}>
-              <span className={styles.statL}>시가</span>
-              <span className="num">{fmtPrice(tick.stckOprc)}</span>
-            </div>
-          )}
-          {tick?.stckHgpr && (
-            <div className={styles.stat}>
-              <span className={styles.statL}>고가</span>
-              <span className="num up">{fmtPrice(tick.stckHgpr)}</span>
-            </div>
-          )}
-          {tick?.stckLwpr && (
-            <div className={styles.stat}>
-              <span className={styles.statL}>저가</span>
-              <span className="num down">{fmtPrice(tick.stckLwpr)}</span>
-            </div>
-          )}
-          {tick?.cttr != null && (
-            <div className={styles.stat}>
-              <span className={styles.statL}>체결강도</span>
-              <span className="num">{Number(tick.cttr).toFixed(2)}</span>
-            </div>
-          )}
+          </div>
         </div>
 
-        {/* Market status pill */}
-        <div
-          className={`${styles.marketPill} ${isOpen ? styles.marketOpen : styles.marketClosed}`}
-        >
-          <span className={styles.dot} />
-          {isOpen ? "장 운영 중" : "장 마감"}
+        {/* 우측: 주문 패널 (데스크탑) */}
+        <div className={styles.rightCol}>
+          <OrderPanel
+            stockCode={code}
+            tick={tick}
+            isOpen={isOpen}
+            onSuccess={handleOrderSuccess}
+          />
+        </div>
+
+        {/* 모바일: 하단 버튼 */}
+        <div className={styles.mobileOrderBar}>
+          <OrderPanel
+            stockCode={code}
+            tick={tick}
+            isOpen={isOpen}
+            onSuccess={handleOrderSuccess}
+            mobile
+          />
         </div>
       </div>
 
-      {/* ── Timeframe tabs ── */}
-      <div className={styles.tfBar}>
-        {/* Intraday group */}
-        <div className={styles.tfGroup}>
-          {INTRADAY_TFS.map((t) => (
-            <button
-              key={t}
-              className={`${styles.tfBtn} ${tf === t ? styles.tfActive : ""}`}
-              onClick={() => setTf(t)}
-            >
-              {TF_LABELS[t]}
-            </button>
-          ))}
-        </div>
-        <div className={styles.tfDivider} />
-        {/* Period group */}
-        <div className={styles.tfGroup}>
-          {PERIOD_TFS.map((t) => (
-            <button
-              key={t}
-              className={`${styles.tfBtn} ${tf === t ? styles.tfActive : ""}`}
-              onClick={() => setTf(t)}
-            >
-              {TF_LABELS[t]}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Chart ── */}
-      <div className={styles.chartWrap}>
-        {chartLoading ? (
-          <div className="spinner" />
-        ) : chartData.length === 0 ? (
-          <div className={styles.noData}>차트 데이터가 없습니다.</div>
-        ) : (
-          <CandleChart data={chartData} mode={chartMode} height={320} />
-        )}
-      </div>
-
-      {/* ── Order success toast ── */}
       {orderDone && <div className={styles.toast}>{orderDone}</div>}
-
-      {/* ── Buy / Sell buttons ── */}
-      <div className={styles.orderBar}>
-        <button
-          className={styles.buyBtn}
-          onClick={() => {
-            if (!isOpen) {
-              alert("장 운영 시간이 아닙니다.");
-              return;
-            }
-            setDrawer("BUY");
-          }}
-        >
-          매수
-        </button>
-        <button
-          className={styles.sellBtn}
-          onClick={() => {
-            if (!isOpen) {
-              alert("장 운영 시간이 아닙니다.");
-              return;
-            }
-            setDrawer("SELL");
-          }}
-        >
-          매도
-        </button>
-      </div>
-
-      {/* ── Order Drawer ── */}
-      {drawer && (
-        <OrderDrawer
-          stockCode={code}
-          side={drawer}
-          onClose={() => setDrawer(null)}
-          onSuccess={handleOrderSuccess}
-        />
-      )}
     </div>
   );
 }

@@ -1,0 +1,243 @@
+.stickyWrap {
+  position: sticky;
+  top: calc(var(--topbar-h) + 16px);
+}
+.panel {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  padding: 24px;
+}
+.panelTitle {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+/* 매수/매도 탭 */
+.sideTabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.sideTab {
+  padding: 11px;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 600;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  border: 2px solid transparent;
+  transition: all 0.15s;
+}
+.buyActive {
+  background: var(--red) !important;
+  color: #fff !important;
+  border-color: var(--red) !important;
+}
+.sellActive {
+  background: var(--bg-subtle) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border) !important;
+}
+
+/* 호가 정보 목록 */
+.infoList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.infoRow:last-child {
+  border-bottom: none;
+}
+.infoLabel {
+  color: var(--text-secondary);
+}
+.infoVal {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* 수량 */
+.qtySection {
+  margin-bottom: 16px;
+}
+.qtyLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+.qtyRow {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  gap: 8px;
+  align-items: center;
+}
+.qtyBtn {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 20px;
+  color: var(--text-primary);
+  background: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.qtyBtn:hover {
+  background: var(--bg-subtle);
+}
+.qtyInput {
+  width: 100%;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.qtyInput:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+.qtyInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+
+/* 주문 총액 */
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+.totalLabel {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+.totalVal {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.error {
+  font-size: 13px;
+  color: var(--red);
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: var(--red-light);
+  border-radius: var(--radius-sm);
+}
+
+/* 주문 버튼 */
+.orderBtn {
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: opacity 0.15s;
+}
+.orderBtn:disabled {
+  opacity: 0.6;
+}
+.orderBuyBtn {
+  background: var(--red);
+}
+.orderBuyBtn:hover:not(:disabled) {
+  background: #b91c1c;
+}
+.orderSellBtn {
+  background: #4b5563;
+}
+.orderSellBtn:hover:not(:disabled) {
+  background: #374151;
+}
+.disclaimer {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 10px;
+}
+
+/* 모바일 하단 바 */
+.mobileBar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  background: var(--white);
+  border-top: 1px solid var(--border);
+  padding: 10px 16px;
+}
+.mobileBuyBtn {
+  padding: 12px;
+  background: var(--red);
+  color: #fff;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  font-size: 15px;
+  font-weight: 700;
+}
+.mobileSellBtn {
+  padding: 12px;
+  background: #4b5563;
+  color: #fff;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* 모바일 시트 */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 200;
+}
+.sheet {
+  position: fixed;
+  bottom: var(--bottomnav-h);
+  left: 0;
+  right: 0;
+  background: var(--white);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  z-index: 201;
+  max-height: 85dvh;
+  overflow-y: auto;
+  animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  padding: 4px 0;
+}
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}

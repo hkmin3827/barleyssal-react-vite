@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 export const useMarketStore = create((set, get) => ({
   // stockCode -> { price, acmlVol, prdyVrss, prdyVrssSign, prdyCtrt, lastMkopCode, ts }
@@ -10,27 +10,54 @@ export const useMarketStore = create((set, get) => ({
   // 최신 체결 이력
   executions: [],
 
+  ranking: [],
+  setRanking: (data) => set({ ranking: data }),
+
   updatePrice: (data) => {
     const {
-      stockCode, price, acmlVol,
-      prdyVrss, prdyVrssSign, prdyCtrt,
+      stockCode,
+      price,
+      acmlVol,
+      prdyVrss,
+      prdyVrssSign,
+      prdyCtrt,
       // 선택적 KIS 필드
-      askp1, bidp1, wghnAvrgStckPrc,
-      stckOprc, stckHgpr, stckLwpr,
-      cntgVol, acmlTrPbmn, cttr,
-      selnCntgCsnu, shnuCntgCsnu,
-      ccldDvsn, mkopCode,
+      askp1,
+      bidp1,
+      wghnAvrgStckPrc,
+      stckOprc,
+      stckHgpr,
+      stckLwpr,
+      cntgVol,
+      acmlTrPbmn,
+      cttr,
+      selnCntgCsnu,
+      shnuCntgCsnu,
+      ccldDvsn,
+      mkopCode,
     } = data;
     set((state) => ({
       prices: {
         ...state.prices,
         [stockCode]: {
-          price, acmlVol, prdyVrss, prdyVrssSign, prdyCtrt,
-          askp1, bidp1, wghnAvrgStckPrc,
-          stckOprc, stckHgpr, stckLwpr,
-          cntgVol, acmlTrPbmn, cttr,
-          selnCntgCsnu, shnuCntgCsnu,
-          ccldDvsn, mkopCode,
+          price,
+          acmlVol,
+          prdyVrss,
+          prdyVrssSign,
+          prdyCtrt,
+          askp1,
+          bidp1,
+          wghnAvrgStckPrc,
+          stckOprc,
+          stckHgpr,
+          stckLwpr,
+          cntgVol,
+          acmlTrPbmn,
+          cttr,
+          selnCntgCsnu,
+          shnuCntgCsnu,
+          ccldDvsn,
+          mkopCode,
           ts: data.ts,
         },
       },
@@ -61,6 +88,6 @@ export const useMarketStore = create((set, get) => ({
     const code_ = get().mkopCodes[code];
     // NEW_MKOP_CLS_CODE "20" = 장중(정규)
     // 없으면(mock mode) 허용
-    return !code_ || code_ === '20';
+    return !code_ || code_ === "20";
   },
 }));
