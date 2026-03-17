@@ -7,14 +7,20 @@ export const useWatchlistStore = create(
       items: [], // [{ code, name }]
 
       toggle: (code, name) => {
-        const items = get().items;
+        const { items } = get();
         const exists = items.some((i) => i.code === code);
-        if (exists) {
-          set({ items: items.filter((i) => i.code !== code) });
-        } else {
-          set({ items: [...items, { code, name }] });
-        }
+        set({
+          items: exists
+            ? items.filter((i) => i.code !== code)
+            : [...items, { code, name }],
+        });
       },
+
+      // WatchlistPage에서 직접 삭제할 때 사용
+      remove: (code) =>
+        set((state) => ({
+          items: state.items.filter((i) => i.code !== code),
+        })),
 
       isWatched: (code) => get().items.some((i) => i.code === code),
     }),

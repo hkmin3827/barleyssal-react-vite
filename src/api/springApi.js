@@ -32,6 +32,7 @@ spring.interceptors.response.use(
     if (err.response?.status === 401) {
       // 세션 만료: auth store 초기화는 각 컴포넌트에서 처리
       window.dispatchEvent(new Event("auth:expired"));
+      logout();
     }
     return Promise.reject(err);
   },
@@ -50,16 +51,16 @@ export const logout = () =>
   spring.post("/api/v1/auth/logout").then((r) => r.data);
 
 /* ── Account ──────────────────────────────────────────────────────── */
-export const getMyAccount = () =>
-  spring.get("/api/v1/accounts/me").then((r) => r.data);
+// export const getMyAccount = () =>
+//   spring.get("/api/v1/accounts/me").then((r) => r.data);
 
 export const setPrincipal = (principal) =>
   spring
     .put("/api/v1/accounts/set-principal", { principal })
     .then((r) => r.data);
 
-export const getMyHoldings = () =>
-  spring.get("/api/v1/accounts/me/holdings").then((r) => r.data);
+// export const getMyHoldings = () =>
+//   spring.get("/api/v1/accounts/me/holdings").then((r) => r.data);
 
 /* ── Orders ───────────────────────────────────────────────────────── */
 export const placeOrder = (

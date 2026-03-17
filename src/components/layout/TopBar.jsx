@@ -3,6 +3,7 @@ import { useAuthStore } from "../../store/authStore";
 import { logout } from "../../api/springApi";
 import { useMarketStore } from "../../store/marketStore";
 import styles from "./TopBar.module.css";
+import logo from "../../assets/barleyssal_logo.png";
 
 export default function TopBar() {
   const { isLoggedIn, user, logout: storeLogout } = useAuthStore();
@@ -22,22 +23,7 @@ export default function TopBar() {
       <div className={styles.inner}>
         <Link to="/" className={styles.logo}>
           <div className={styles.logoIcon}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <polyline
-                points="22 7 13.5 15.5 8.5 10.5 2 17"
-                stroke="white"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <polyline
-                points="16 7 22 7 22 13"
-                stroke="white"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <img src={logo} alt="보리쌀 로고" className={styles.logoImg} />
           </div>
           <span className={styles.logoText}>보리쌀 모의투자</span>
         </Link>

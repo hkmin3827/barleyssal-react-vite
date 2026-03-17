@@ -1,186 +1,169 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import { useMarketStore } from "../store/marketStore";
 import { useAuthStore } from "../store/authStore";
-import { STOCKS } from "../constants/stocks";
 
 const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:4000/ws";
-const ALL_CODES = STOCKS.map((s) => s.code);
 
-let wsInstance = null;
+let ws = null;
+let refCount = 0;
+let pingTimer = null;
 let reconnectTimer = null;
-let subscribers = 0;
-let pingInterval = null;
-
 const listeners = new Set();
 
 function notifyListeners(msg) {
   listeners.forEach((fn) => fn(msg));
 }
 
+function wsSend(msg) {
+  if (ws?.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(msg));
+  }
+}
+
 function connect() {
   if (
-    wsInstance &&
-    (wsInstance.readyState === WebSocket.CONNECTING ||
-      wsInstance.readyState === WebSocket.OPEN)
+    ws &&
+    (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)
   ) {
     return;
   }
 
-  wsInstance = new WebSocket(WS_URL);
+  ws = new WebSocket(WS_URL);
 
-  wsInstance.onopen = () => {
-    console.log("✅ WS Connected to:", WS_URL);
-    notifyListeners({ type: "__WS_OPEN__" });
-    if (pingInterval) clearInterval(pingInterval);
-    pingInterval = setInterval(() => {
-      if (wsInstance?.readyState === WebSocket.OPEN)
-        wsInstance.send(JSON.stringify({ type: "PING" }));
+  ws.onopen = () => {
+    console.log("✅ WS Connected:", WS_URL);
+    clearInterval(pingTimer);
+    pingTimer = setInterval(() => {
+      if (ws?.readyState === WebSocket.OPEN) wsSend({ type: "PING" });
     }, 30000);
+    notifyListeners({ type: "__WS_OPEN__" });
   };
 
-  wsInstance.onmessage = (e) => {
+  ws.onmessage = (e) => {
     try {
-      const msg = JSON.parse(e.data);
-      notifyListeners(msg);
-    } catch (err) {
-      console.error("WS Message Parse Error", err);
+      notifyListeners(JSON.parse(e.data));
+    } catch {
+      // ignore parse errors
     }
   };
 
-  wsInstance.onclose = (e) => {
-    console.log("⚠️ WS Disconnected", e.reason);
+  ws.onclose = () => {
+    clearInterval(pingTimer);
     notifyListeners({ type: "__WS_CLOSE__" });
-    clearInterval(pingInterval);
-    if (subscribers > 0) {
-      if (reconnectTimer) clearTimeout(reconnectTimer);
+    if (refCount > 0) {
+      clearTimeout(reconnectTimer);
       reconnectTimer = setTimeout(connect, 3000);
     }
   };
 
-  wsInstance.onerror = (e) => {
-    console.error("WS Socket Error");
+  ws.onerror = () => {
+    // onclose가 뒤따라 호출되므로 재연결 처리 불필요
   };
 }
 
 function disconnect() {
-  if (!wsInstance) return;
-  // 연결 중(0)일 때는 잠시 기다렸다가 닫거나, 단순히 reference 해제
-  // 여기서는 강제 종료 시 발생하는 에러를 피하기 위해 OPEN 상태일 때만 close 호출 권장
-  if (wsInstance.readyState === WebSocket.OPEN) {
-    wsInstance.close();
-  } else if (wsInstance.readyState === WebSocket.CONNECTING) {
-    // 연결 중일 때는 onopen에서 바로 닫히도록 핸들러를 수정하거나
-    // 그냥 두어 자연스럽게 연결되게 한 뒤 다음 unmount 시 처리하게 함
-    wsInstance.onopen = () => wsInstance.close();
-  }
-  wsInstance = null;
-
   clearTimeout(reconnectTimer);
-  clearInterval(pingInterval);
-}
-
-export function wsSend(msg) {
-  if (wsInstance?.readyState === WebSocket.OPEN) {
-    wsInstance.send(JSON.stringify(msg));
-  } else {
-    console.warn("WS is not open. State:", wsInstance?.readyState);
+  clearInterval(pingTimer);
+  if (!ws) return;
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.close();
+  } else if (ws.readyState === WebSocket.CONNECTING) {
+    ws.onopen = () => ws.close();
   }
+  ws = null;
 }
 
-export function useWebSocket(options = {}) {
-  const { stocks = [], subscribeAccount = true } = options;
+export { wsSend };
 
-  const { updatePrice, updateMkopCode, setPnlData, addExecution, setRanking } =
-    useMarketStore();
+/**
+ * @param {string[]} symbols - 구독할 종목 코드 배열. 빈 배열이면 가격 구독 없음.
+ * @param {{ subscribeAccount?: boolean }} options
+ *
+ */
+export function useWebSocket(symbols = [], { subscribeAccount = false } = {}) {
+  const {
+    updatePrice,
+    updateMkopCode,
+    setPnlData,
+    addExecution,
+    setHomeUpdate,
+  } = useMarketStore();
   const { user } = useAuthStore();
-  const stocksRef = useRef(stocks);
+
+  // symbols를 ref로 관리해 클로저 stale 방지
+  const symbolsRef = useRef(symbols);
+  symbolsRef.current = symbols;
 
   useEffect(() => {
-    subscribers++;
-    if (subscribers === 1) connect();
+    refCount++;
+    if (refCount === 1) connect();
 
     const handler = (msg) => {
       switch (msg.type) {
-        case "ranking": {
-          setRanking(msg.data);
-          break;
-        }
-        case "__WS_OPEN__": {
-          if (stocksRef.current.length) {
-            wsSend({ type: "SUBSCRIBE_PRICE", symbols: stocksRef.current });
+        case "__WS_OPEN__":
+          // 재연결 시에도 구독 복원
+          if (symbolsRef.current.length > 0) {
+            wsSend({ type: "SUBSCRIBE_PRICE", symbols: symbolsRef.current });
           }
           if (subscribeAccount && user?.id) {
             wsSend({ type: "SUBSCRIBE_ACCOUNT", userId: String(user.id) });
           }
           break;
-        }
-        case "PRICE_UPDATE": {
+
+        case "PRICE_UPDATE":
           updatePrice(msg);
-          // 장운영 코드 추출 (NEW_MKOP_CLS_CODE → mkopCode)
-          if (msg.mkopCode) {
-            updateMkopCode(msg.stockCode, msg.mkopCode);
-          }
+          if (msg.mkopCode) updateMkopCode(msg.stockCode, msg.mkopCode);
           break;
-        }
-        case "PNL_UPDATE": {
+
+        case "home_update":
+          setHomeUpdate({
+            topChangeRate: msg.topChangeRate ?? [],
+            topBuyVolume: msg.topBuyVolume ?? [],
+          });
+          break;
+
+        case "PNL_UPDATE":
           setPnlData(msg);
           break;
-        }
-        case "EXECUTION": {
+
+        case "EXECUTION":
           addExecution(msg);
           break;
-        }
       }
     };
 
     listeners.add(handler);
 
-    // Subscribe to stocks
-    if (wsInstance?.readyState === WebSocket.OPEN) {
-      if (stocks.length) wsSend({ type: "SUBSCRIBE_PRICE", stocks });
-      if (subscribeAccount && user?.id)
+    if (ws?.readyState === WebSocket.OPEN) {
+      if (symbolsRef.current.length > 0) {
+        wsSend({ type: "SUBSCRIBE_PRICE", symbols: symbolsRef.current });
+      }
+      if (subscribeAccount && user?.id) {
         wsSend({ type: "SUBSCRIBE_ACCOUNT", userId: String(user.id) });
+      }
     }
 
     return () => {
       listeners.delete(handler);
-      subscribers--;
-      if (subscribers <= 0) {
-        subscribers = 0;
+      refCount--;
+      if (refCount <= 0) {
+        refCount = 0;
         setTimeout(() => {
-          if (subscribers === 0) disconnect();
-        }, 100);
+          if (refCount === 0) disconnect();
+        }, 1000);
       }
     };
   }, [user?.id, subscribeAccount]);
 
-  // Update stocks when they change
   useEffect(() => {
-    stocksRef.current = stocks;
-    if (stocks.length && wsInstance?.readyState === WebSocket.OPEN) {
-      wsSend({ type: "SUBSCRIBE_PRICE", stocks });
-    }
-  }, [JSON.stringify(stocks)]);
-
-  // useEffect(() => {
-  //   if (subscribeAccount && user?.id && wsInstance?.readyState === 1) {
-  //     wsSend({ type: "SUBSCRIBE_ACCOUNT", userId: String(user.id) });
-  //   }
-  // }, [subscribeAccount, user?.id]);
-  useEffect(() => {
-    stocksRef.current = stocks;
-    if (wsInstance?.readyState === WebSocket.OPEN) {
-      if (stocks.length > 0) {
-        wsSend({ type: "SUBSCRIBE_PRICE", symbols: stocks });
-      }
+    if (ws?.readyState === WebSocket.OPEN && symbols.length > 0) {
+      wsSend({ type: "SUBSCRIBE_PRICE", symbols });
     }
 
-    // 컴포넌트 언마운트 시 실행되는 클린업 함수
     return () => {
-      if (wsInstance?.readyState === WebSocket.OPEN && stocks.length > 0) {
-        // 빈 배열을 보내 서버의 기존 구독 목록을 완전히 초기화
+      if (ws?.readyState === WebSocket.OPEN) {
         wsSend({ type: "SUBSCRIBE_PRICE", symbols: [] });
       }
     };
-  }, [JSON.stringify(stocks)]);
+  }, [JSON.stringify(symbols)]);
 }

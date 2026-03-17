@@ -1,6 +1,8 @@
 .bar {
   position: fixed;
-  top: 0; left: 0; right: 0;
+  top: 0;
+  left: 0;
+  right: 0;
   height: var(--topbar-h);
   background: var(--white);
   border-bottom: 1px solid var(--border);
@@ -21,13 +23,17 @@
   gap: 8px;
 }
 .logoIcon {
-  width: 34px; height: 34px;
-  background: #2563eb;
-  border-radius: 8px;
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+}
+.logoImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* 이미지 비율 유지 */
 }
 .logoText {
   font-size: 17px;
@@ -41,7 +47,9 @@
   gap: 4px;
 }
 @media (min-width: 768px) {
-  .desktopNav { display: flex; }
+  .desktopNav {
+    display: flex;
+  }
 }
 .navLink {
   padding: 7px 14px;
@@ -49,7 +57,9 @@
   font-size: 14px;
   font-weight: 500;
   color: var(--text-secondary);
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 .navLink:hover {
   background: var(--bg-subtle);
@@ -89,7 +99,9 @@
   padding: 6px 14px;
   transition: background 0.15s;
 }
-.logoutBtn:hover { background: var(--bg-subtle); }
+.logoutBtn:hover {
+  background: var(--bg-subtle);
+}
 .loginBtn {
   font-size: 13px;
   font-weight: 600;
@@ -99,4 +111,6 @@
   padding: 7px 16px;
   transition: background 0.15s;
 }
-.loginBtn:hover { background: var(--blue-hover); }
+.loginBtn:hover {
+  background: var(--blue-hover);
+}

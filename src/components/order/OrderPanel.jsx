@@ -1,15 +1,7 @@
-import { useState, useEffect } from "react";
-import { useMarketStore } from "../../store/marketStore";
-import { fmtPrice } from "../../utils/format";
+import { useState } from "react";
 import { placeOrder } from "../../api/springApi";
-import { getStockName } from "../../constants/stocks";
 import styles from "./OrderPanel.module.css";
 
-/**
- * 피그마 디자인 기반 주문 패널
- * desktop: rightCol에 sticky card
- * mobile: 하단 바 + sheet
- */
 export default function OrderPanel({
   stockCode,
   tick,
@@ -18,13 +10,35 @@ export default function OrderPanel({
   mobile = false,
 }) {
   const [side, setSide] = useState("BUY");
+  const [orderType, setOrderType] = useState("MARKET");
   const [qty, setQty] = useState(1);
+  const [limitPrice, setLimitPrice] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const currentPrice = tick?.price ?? 0;
-  const estTotal = qty > 0 ? currentPrice * qty : 0;
+
+  const priceForCalc =
+    orderType === "LIMIT" ? parseFloat(limitPrice) || 0 : currentPrice;
+  const estTotal = qty > 0 ? priceForCalc * qty : 0;
+
+  const handleSideChange = (newSide) => {
+    setSide(newSide);
+    setError("");
+  };
+
+  const handleOrderTypeChange = (type) => {
+    setOrderType(type);
+    setLimitPrice("");
+    setError("");
+  };
+
+  // 콤마 제거 후 숫자만 저장, 표시는 toLocaleString
+  const handleLimitPriceChange = (e) => {
+    const raw = e.target.value.replace(/[^0-9]/g, "");
+    setLimitPrice(raw);
+  };
 
   const handleSubmit = async () => {
     if (!isOpen) {
@@ -35,13 +49,23 @@ export default function OrderPanel({
       setError("수량을 입력하세요.");
       return;
     }
+    if (orderType === "LIMIT") {
+      const lp = parseFloat(limitPrice);
+      if (!limitPrice || isNaN(lp) || lp <= 0) {
+        setError("주문 가격을 입력하세요.");
+        return;
+      }
+    }
+
     setLoading(true);
     setError("");
     try {
-      const result = await placeOrder(stockCode, side, "MARKET", qty, null);
+      const lp = orderType === "LIMIT" ? parseFloat(limitPrice) : null;
+      const result = await placeOrder(stockCode, side, orderType, qty, lp);
       onSuccess?.(result);
       setMobileOpen(false);
       setQty(1);
+      setLimitPrice("");
     } catch (e) {
       setError(
         e.response?.data?.message || "주문 실패. 잠시 후 다시 시도하세요.",
@@ -59,21 +83,31 @@ export default function OrderPanel({
       <div className={styles.sideTabs}>
         <button
           className={`${styles.sideTab} ${side === "BUY" ? styles.buyActive : ""}`}
-          onClick={() => {
-            setSide("BUY");
-            setError("");
-          }}
+          onClick={() => handleSideChange("BUY")}
         >
           매수
         </button>
         <button
           className={`${styles.sideTab} ${side === "SELL" ? styles.sellActive : ""}`}
-          onClick={() => {
-            setSide("SELL");
-            setError("");
-          }}
+          onClick={() => handleSideChange("SELL")}
         >
           매도
+        </button>
+      </div>
+
+      {/* 시장가 / 지정가 탭 */}
+      <div className={styles.orderTypeTabs}>
+        <button
+          className={`${styles.orderTypeTab} ${orderType === "MARKET" ? styles.orderTypeActive : ""}`}
+          onClick={() => handleOrderTypeChange("MARKET")}
+        >
+          시장가
+        </button>
+        <button
+          className={`${styles.orderTypeTab} ${orderType === "LIMIT" ? styles.orderTypeActive : ""}`}
+          onClick={() => handleOrderTypeChange("LIMIT")}
+        >
+          지정가
         </button>
       </div>
 
@@ -112,6 +146,55 @@ export default function OrderPanel({
         ))}
       </div>
 
+      {/* 지정가: 주문 가격 입력 */}
+      {orderType === "LIMIT" && (
+        <div className={styles.priceSection}>
+          <div className={styles.priceLabel}>주문 가격</div>
+          <div className={styles.priceInputWrap}>
+            <input
+              className={styles.priceInput}
+              type="text"
+              inputMode="numeric"
+              placeholder={
+                currentPrice > 0
+                  ? `현재가 ${currentPrice.toLocaleString()}`
+                  : "가격 입력"
+              }
+              value={
+                limitPrice ? parseInt(limitPrice, 10).toLocaleString() : ""
+              }
+              onChange={handleLimitPriceChange}
+            />
+            <span className={styles.priceUnit}>원</span>
+          </div>
+          {limitPrice && currentPrice > 0 && (
+            <div
+              className={`${styles.priceDiff} ${
+                parseFloat(limitPrice) > currentPrice
+                  ? styles.priceDiffUp
+                  : parseFloat(limitPrice) < currentPrice
+                    ? styles.priceDiffDown
+                    : styles.priceDiffSame
+              }`}
+            >
+              {parseFloat(limitPrice) > currentPrice
+                ? `▲ 현재가 대비 +${(parseFloat(limitPrice) - currentPrice).toLocaleString()}원`
+                : parseFloat(limitPrice) < currentPrice
+                  ? `▼ 현재가 대비 −${(currentPrice - parseFloat(limitPrice)).toLocaleString()}원`
+                  : "현재가와 동일"}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 시장가: 안내 메시지 */}
+      {orderType === "MARKET" && (
+        <div className={styles.marketNotice}>
+          <span className={styles.marketNoticeIcon}>ℹ</span>
+          시장가 주문은 실시간 체결가로 즉시 처리됩니다.
+        </div>
+      )}
+
       {/* 수량 */}
       <div className={styles.qtySection}>
         <div className={styles.qtyLabel}>주문 수량</div>
@@ -120,7 +203,7 @@ export default function OrderPanel({
             className={styles.qtyBtn}
             onClick={() => setQty((q) => Math.max(1, q - 1))}
           >
-            -
+            −
           </button>
           <input
             className={styles.qtyInput}
@@ -140,8 +223,17 @@ export default function OrderPanel({
 
       {/* 총액 */}
       <div className={styles.totalRow}>
-        <span className={styles.totalLabel}>주문 총액</span>
-        <span className={styles.totalVal}>{estTotal.toLocaleString()}원</span>
+        <span className={styles.totalLabel}>
+          {orderType === "MARKET" ? "예상 주문 총액" : "주문 총액"}
+        </span>
+        <div className={styles.totalRight}>
+          <span className={styles.totalVal}>
+            {estTotal > 0 ? estTotal.toLocaleString() : "-"}원
+          </span>
+          {orderType === "MARKET" && (
+            <span className={styles.totalNote}>체결가 기준 변동될 수 있음</span>
+          )}
+        </div>
       </div>
 
       {error && <div className={styles.error}>{error}</div>}
@@ -155,7 +247,7 @@ export default function OrderPanel({
         {loading ? (
           <span className="spinner-sm" />
         ) : (
-          `${side === "BUY" ? "매수" : "매도"} 주문`
+          `${side === "BUY" ? "매수" : "매도"} ${orderType === "MARKET" ? "시장가" : "지정가"} 주문`
         )}
       </button>
       <div className={styles.disclaimer}>
@@ -164,7 +256,6 @@ export default function OrderPanel({
     </div>
   );
 
-  // 모바일: 하단 고정 바 + 슬라이드업 시트
   if (mobile) {
     return (
       <>

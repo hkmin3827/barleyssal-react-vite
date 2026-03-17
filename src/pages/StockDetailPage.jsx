@@ -1,15 +1,14 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useMarketStore } from "../store/marketStore";
 import { useWatchlistStore } from "../store/watchlistStore";
 import { getStockName } from "../constants/stocks";
-import { getIntradayChart, getPeriodChart } from "../api/goApi";
+import { getIntradayChart, getPeriodChart, getStockInfo } from "../api/goApi";
 import CandleChart from "../components/chart/CandleChart";
 import OrderPanel from "../components/order/OrderPanel";
-import { fmtPrice, fmtPct, fmtVol, prdySign, signStr } from "../utils/format";
-import styles from "./StockDetailPage.module.css";
+import { fmtPrice, fmtPct, prdySign, signStr } from "../utils/format";
 import { useWebSocket } from "../hooks/useWebSocket";
-
+import styles from "./StockDetailPage.module.css";
 const INTRADAY_TFS = ["1m", "5m", "10m", "30m"];
 const PERIOD_TFS = ["D", "W", "M", "Y"];
 const TF_LABELS = {
@@ -57,9 +56,10 @@ function TrendIcon({ up }) {
 
 export default function StockDetailPage() {
   const { code } = useParams();
-  useWebSocket({ stocks: [code], subscribeAccount: false });
   const navigate = useNavigate();
+
   const tick = useMarketStore((s) => s.prices[code]);
+  const seedPrice = useMarketStore((s) => s.seedPrice);
   const isOpen = useMarketStore((s) => s.isMarketOpen(code));
   const isWatched = useWatchlistStore((s) => s.isWatched(code));
   const toggle = useWatchlistStore((s) => s.toggle);
@@ -69,6 +69,30 @@ export default function StockDetailPage() {
   const [chartMode, setChartMode] = useState("intraday");
   const [chartLoading, setChartLoading] = useState(false);
   const [orderDone, setOrderDone] = useState(null);
+
+  useWebSocket([code], { subscribeAccount: false });
+
+  useEffect(() => {
+    getStockInfo(code)
+      .then((res) => {
+        if (res?.price != null) {
+          seedPrice(code, {
+            price: res.price,
+            prdyCtrt: res.changeRate,
+            prdyVrss: res.prdyVrss,
+            stckOprc: res.stckOprc,
+            stckHgpr: res.stckHgpr,
+            stckLwpr: res.stckLwpr,
+            acmlVol: res.acmlVol,
+            volume: res.volume,
+            ts: res.ts,
+          });
+        }
+      })
+      .catch(() => {
+        // seed 실패 시 빈 화면으로 시작 (WS 틱으로 나중에 채워짐)
+      });
+  }, [code, seedPrice]);
 
   const name = getStockName(code);
   const dir = prdySign(tick?.prdyVrssSign);
@@ -112,7 +136,6 @@ export default function StockDetailPage() {
 
   return (
     <div className={styles.page}>
-      {/* 뒤로가기 헤더 */}
       <div className={styles.header}>
         <button className={styles.backBtn} onClick={() => navigate(-1)}>
           <svg
@@ -127,13 +150,11 @@ export default function StockDetailPage() {
           >
             <polyline points="15 18 9 12 15 6" />
           </svg>
-          종목 목록
+          이전
         </button>
       </div>
 
-      {/* 메인 레이아웃: 좌측 + 우측(주문) */}
       <div className={styles.layout}>
-        {/* 좌측: 종목정보 + 차트 */}
         <div className={styles.leftCol}>
           {/* 종목 헤더 카드 */}
           <div className={styles.infoCard}>
@@ -168,7 +189,7 @@ export default function StockDetailPage() {
               >
                 {tick ? `${tick.price.toLocaleString()}원` : "—"}
               </div>
-              {tick && (
+              {tick?.prdyVrss != null && (
                 <div
                   className={styles.priceChange}
                   style={{ color: priceColor }}
@@ -182,12 +203,16 @@ export default function StockDetailPage() {
 
             <div className={styles.separator} />
 
-            {/* 4열 stats 그리드 */}
             <div className={styles.statsGrid}>
               {[
                 ["시가", tick?.stckOprc, null],
                 ["고가", tick?.stckHgpr, "var(--red)"],
                 ["저가", tick?.stckLwpr, "var(--blue)"],
+                [
+                  "체결 거래량 ",
+                  tick?.volume ? `${tick.volume.toLocaleString()}주` : null,
+                  null,
+                ],
                 [
                   "누적 거래량",
                   tick?.acmlVol ? `${tick.acmlVol.toLocaleString()}주` : null,

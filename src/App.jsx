@@ -8,10 +8,10 @@ import LoginPage from "./pages/LoginPage";
 import StocksPage from "./pages/StocksPage";
 import WatchlistPage from "./pages/WatchlistPage";
 import AccountPage from "./pages/AccountPage";
+import TradeHistoryPage from "./pages/TradeHistoryPage";
 import StockDetailPage from "./pages/StockDetailPage";
 import AdminPage from "./pages/AdminPage";
 import RankingPage from "./pages/RankingPage";
-import { useWebSocket } from "./hooks/useWebSocket";
 
 function ProtectedRoute({ children, adminOnly = false }) {
   const { isLoggedIn, user } = useAuthStore();
@@ -21,8 +21,8 @@ function ProtectedRoute({ children, adminOnly = false }) {
 }
 
 export default function App() {
-  useWebSocket({ stocks: [] });
   const storeLogout = useAuthStore((s) => s.logout);
+
   useEffect(() => {
     const handler = () => storeLogout();
     window.addEventListener("auth:expired", handler);
@@ -39,6 +39,14 @@ export default function App() {
         <Route path="/watchlist" element={<WatchlistPage />} />
         <Route path="/ranking" element={<RankingPage />} />
         <Route path="/stock/:code" element={<StockDetailPage />} />
+        <Route
+          path="/trades"
+          element={
+            <ProtectedRoute>
+              <TradeHistoryPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/account"
           element={

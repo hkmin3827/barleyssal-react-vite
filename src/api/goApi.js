@@ -1,15 +1,9 @@
 import axios from "axios";
 
 const golang = axios.create({
-  baseURL: import.meta.env.VITE_GOLANG_URL || "http://localhost:4000",
+  baseURL: import.meta.env.VITE_GOLANG_URL,
   timeout: 30000,
 });
-
-export const getPrice = (stockCode) =>
-  golang.get(`/api/market/price/${stockCode}`).then((r) => r.data);
-
-export const getBatchPrices = (symbols) =>
-  golang.post("/api/market/prices/batch", { symbols }).then((r) => r.data);
 
 export const searchStocks = (q, limit = 20) =>
   golang
@@ -18,6 +12,12 @@ export const searchStocks = (q, limit = 20) =>
 
 export const getAccountPnl = (userId) =>
   golang.get(`/api/market/account/pnl/${userId}`).then((r) => r.data);
+
+export const getSortedStocks = (sort) =>
+  golang.get("/api/stocks", { params: { sort } }).then((r) => r.data);
+
+export const getStockInfo = (stockCode) =>
+  golang.get(`/api/stocks/info/${stockCode}`).then((r) => r.data);
 
 /**
  * @param {string} stockCode

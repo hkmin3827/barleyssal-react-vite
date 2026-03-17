@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   PieChart,
@@ -11,8 +10,8 @@ import {
 import { STOCKS } from "../constants/stocks";
 import { useMarketStore } from "../store/marketStore";
 import { useAuthStore } from "../store/authStore";
-import { getTopProfitableTrades, getPopularStocks } from "../api/springApi";
-import { fmtPrice, fmtPct, prdySign, signStr } from "../utils/format";
+import { useWebSocket } from "../hooks/useWebSocket";
+import { fmtPrice } from "../utils/format";
 import styles from "./HomePage.module.css";
 
 const PIE_COLORS = [
@@ -27,10 +26,6 @@ const PIE_COLORS = [
   "#84cc16",
   "#f97316",
 ];
-
-function getStockName(code) {
-  return STOCKS.find((s) => s.code === code)?.name ?? code;
-}
 
 function TrendIcon({ up }) {
   return up ? (
@@ -67,43 +62,38 @@ function TrendIcon({ up }) {
 export default function HomePage() {
   const navigate = useNavigate();
   const { user, isLoggedIn } = useAuthStore();
-  const prices = useMarketStore((s) => s.prices);
-  const ranking = useMarketStore((s) => s.ranking);
-  const [topTrades, setTopTrades] = useState([]);
-  const [popularData, setPopularData] = useState({});
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    Promise.all([getTopProfitableTrades(), getPopularStocks()])
-      .then(([top, pop]) => {
-        setTopTrades(Array.isArray(top) ? top.slice(0, 10) : []);
-        setPopularData(pop && typeof pop === "object" ? pop : {});
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  // [변경] topChangeRate / topBuyVolume: Go WS home_update 이벤트로 수신
+  // BroadcastToAll 5초 주기 → ZSET ZREVRANGE TOP 10 기반
+  const topChangeRate = useMarketStore((s) => s.topChangeRate); // 등락률 TOP 10
+  const topBuyVolume = useMarketStore((s) => s.topBuyVolume); // 매수 비중 TOP 10 (buyVolPct 포함)
 
-  // 파이차트 데이터
-  const total = Object.values(popularData).reduce((a, b) => a + Number(b), 0);
-  const pieData = Object.entries(popularData)
-    .sort((a, b) => Number(b[1]) - Number(a[1]))
-    .slice(0, 6)
-    .map(([code, cnt], i) => ({
-      name: getStockName(code),
-      value: Number(cnt),
-      pct: total ? ((Number(cnt) / total) * 100).toFixed(1) : "0",
-      fill: PIE_COLORS[i],
-    }));
+  // [변경] useWebSocket([], ...) — 개별 종목 가격 구독 불필요
+  // 홈페이지는 home_update(BroadcastToAll)만 수신하면 충분
+  // [수정] 기존 오류: useWebSocket([ALL_CODES], ...) → [ALL_CODES]는 배열 안 배열 (이중 중첩)
+  useWebSocket([], { subscribeAccount: false });
 
-  // 실시간 주요 통계
-  const topByVolume = ranking[0];
-  const topByChange = [...ranking].sort(
-    (a, b) => (b.changeRate || 0) - (a.changeRate || 0),
-  )[0];
+  // ── 파이차트 데이터: topBuyVolume 기반 ──────────────────────────────────
+  // [변경] 기존: getPopularStocks() Spring DB 누적 체결 건수
+  //        변경: topBuyVolume[].buyVolPct — WS로 받은 금일 매수 비중(%)
+  // buyVolPct: PriceService.GetTopBuyVolume()에서 전체 score 합산 후 비중 계산
+  const pieData = topBuyVolume.map((item, i) => ({
+    name: item.stockName,
+    value: parseFloat((item.buyVolPct ?? 0).toFixed(2)),
+    pct: (item.buyVolPct ?? 0).toFixed(1),
+    fill: PIE_COLORS[i % PIE_COLORS.length],
+    stockCode: item.stockCode,
+  }));
+  const pieTotal = pieData.reduce((sum, d) => sum + d.value, 0);
+
+  // ── 퀵스탯 소스 ────────────────────────────────────────────────────────
+  // [수정] topByVolume(미정의) → topByBuyVol (topBuyVolume[0])
+  // [수정] ranking.length(미정의) → STOCKS.length (고정값)
+  const topByBuyVol = topBuyVolume[0]; // 매수 비중 1위
+  const topByChange = topChangeRate[0]; // 등락률 1위
 
   return (
     <div className={styles.page}>
-      {/* 인사 헤더 */}
       {isLoggedIn && (
         <div className={styles.greetBanner}>
           <span>
@@ -113,15 +103,13 @@ export default function HomePage() {
       )}
 
       <div className={styles.pageInner}>
-        {/* 상단 2열 그리드 */}
         <div className={styles.topGrid}>
-          {/* 파이차트 카드 */}
+          {/* ── 파이차트: 인기종목 매매비중 (Go WS topBuyVolume 기반) ─────── */}
           <div className={styles.card}>
             <h2 className={styles.cardTitle}>인기종목 매매비중</h2>
-            {loading ? (
+            {pieData.length === 0 ? (
+              // WS home_update 첫 수신 전까지 (최대 5초) 스피너 표시
               <div className="spinner" />
-            ) : total === 0 ? (
-              <div className={styles.empty}>데이터가 없습니다.</div>
             ) : (
               <>
                 <div className={styles.pieWrap}>
@@ -135,6 +123,7 @@ export default function HomePage() {
                         labelLine={false}
                         label={({ name, pct }) => `${name} ${pct}%`}
                         dataKey="value"
+                        onClick={(d) => navigate(`/stock/${d.stockCode}`)}
                       >
                         {pieData.map((e, i) => (
                           <Cell key={i} fill={e.fill} />
@@ -142,7 +131,7 @@ export default function HomePage() {
                       </Pie>
                       <Tooltip
                         formatter={(v, n, p) => [
-                          `${v.toLocaleString()}건 (${p.payload.pct}%)`,
+                          `${v.toFixed(1)}% (매수비중)`,
                           n,
                         ]}
                       />
@@ -152,7 +141,12 @@ export default function HomePage() {
                 </div>
                 <div className={styles.legendList}>
                   {pieData.map((d) => (
-                    <div key={d.name} className={styles.legendItem}>
+                    <div
+                      key={d.stockCode}
+                      className={styles.legendItem}
+                      style={{ cursor: "pointer" }}
+                      onClick={() => navigate(`/stock/${d.stockCode}`)}
+                    >
                       <span
                         className={styles.legendDot}
                         style={{ background: d.fill }}
@@ -167,70 +161,81 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* 수익률 TOP 10 */}
+          {/* ── 등락률 TOP 10 (Go WS topChangeRate 기반) ───────────────── */}
+          {/* [변경] 수익률 TOP 10(Spring 체결 수익률) → 등락률 TOP 10(Go ZSET) */}
           <div className={styles.card}>
-            <h2 className={styles.cardTitle}>수익률 TOP 10</h2>
-            {loading ? (
+            <h2 className={styles.cardTitle}>등락률 TOP 10</h2>
+            {topChangeRate.length === 0 ? (
               <div className="spinner" />
-            ) : topTrades.length === 0 ? (
-              <div className={styles.empty}>데이터가 없습니다.</div>
             ) : (
               <div className={styles.top10List}>
-                {topTrades.map((t, i) => (
-                  <div
-                    key={t.id ?? i}
-                    className={styles.top10Item}
-                    onClick={() => navigate(`/stock/${t.stockCode}`)}
-                  >
+                {topChangeRate.map((t, i) => {
+                  const isUp = (t.changeRate ?? 0) >= 0;
+                  return (
                     <div
-                      className={styles.top10Rank}
-                      style={
-                        i < 3 ? { background: "#dbeafe", color: "#1d4ed8" } : {}
-                      }
+                      key={t.stockCode}
+                      className={styles.top10Item}
+                      onClick={() => navigate(`/stock/${t.stockCode}`)}
                     >
-                      {i + 1}
-                    </div>
-                    <div className={styles.top10Info}>
-                      <div className={styles.top10Name}>
-                        {t.userName ?? "익명"}
-                      </div>
-                      <div className={styles.top10Code}>{t.stockCode}</div>
-                    </div>
-                    <div className={styles.top10Right}>
-                      <div className={styles.top10Price}>
-                        {fmtPrice(t.executedPrice)}원
-                      </div>
+                      {/* 순위 배지 */}
                       <div
-                        className={`${styles.top10Rate} ${(t.finalProfitRate ?? 0) >= 0 ? "up" : "down"}`}
+                        className={styles.top10Rank}
+                        style={
+                          i < 3
+                            ? { background: "#dbeafe", color: "#1d4ed8" }
+                            : {}
+                        }
                       >
-                        <TrendIcon up={(t.finalProfitRate ?? 0) >= 0} />
-                        {(t.finalProfitRate ?? 0) >= 0 ? "+" : ""}
-                        {Number(t.finalProfitRate ?? 0).toFixed(2)}%
+                        {i + 1}
+                      </div>
+
+                      {/* 종목 정보 */}
+                      <div className={styles.top10Info}>
+                        <div className={styles.top10Name}>{t.stockName}</div>
+                        <div className={styles.top10Code}>{t.stockCode}</div>
+                      </div>
+
+                      {/* 현재가 + 등락률 */}
+                      <div className={styles.top10Right}>
+                        <div className={styles.top10Price}>
+                          {t.price ? `${t.price.toLocaleString()}원` : "-"}
+                        </div>
+                        <div
+                          className={`${styles.top10Rate} ${isUp ? "up" : "down"}`}
+                        >
+                          <TrendIcon up={isUp} />
+                          {isUp ? "+" : ""}
+                          {(t.changeRate ?? 0).toFixed(2)}%
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
         </div>
 
-        {/* 퀵스탯 3열 */}
+        {/* ── 퀵스탯 3열 ─────────────────────────────────────────────────── */}
         <div className={styles.statsGrid}>
+          {/* 매수 비중 1위 */}
+          {/* [수정] topByVolume(미정의) → topByBuyVol(topBuyVolume[0]) */}
           <div
             className={styles.statCard}
             style={{ background: "linear-gradient(135deg,#2563eb,#1d4ed8)" }}
           >
-            <div className={styles.statLabel}>거래량 1위</div>
+            <div className={styles.statLabel}>매수 비중 1위</div>
             <div className={styles.statValue}>
-              {topByVolume?.stockName ?? "-"}
+              {topByBuyVol?.stockName ?? "-"}
             </div>
             <div className={styles.statSub}>
-              {topByVolume
-                ? `${(topByVolume.volume || 0).toLocaleString()} 주`
+              {topByBuyVol?.buyVolPct != null
+                ? `${topByBuyVol.buyVolPct.toFixed(1)}%`
                 : ""}
             </div>
           </div>
+
+          {/* 최고 상승률 */}
           <div
             className={styles.statCard}
             style={{ background: "linear-gradient(135deg,#dc2626,#b91c1c)" }}
@@ -245,16 +250,15 @@ export default function HomePage() {
                 : ""}
             </div>
           </div>
+
+          {/* 총 종목 수 */}
+          {/* [수정] ranking.length(미정의) → STOCKS.length */}
           <div
             className={styles.statCard}
             style={{ background: "linear-gradient(135deg,#7c3aed,#6d28d9)" }}
           >
             <div className={styles.statLabel}>총 종목 수</div>
-            <div className={styles.statValue}>
-              {ranking.length > 0
-                ? `${ranking.length}개`
-                : `${STOCKS.length}개`}
-            </div>
+            <div className={styles.statValue}>{STOCKS.length}개</div>
             <div className={styles.statSub}>거래 가능</div>
           </div>
         </div>

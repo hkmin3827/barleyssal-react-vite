@@ -1,18 +1,27 @@
 import { create } from "zustand";
 
 export const useMarketStore = create((set, get) => ({
-  // stockCode -> { price, acmlVol, prdyVrss, prdyVrssSign, prdyCtrt, lastMkopCode, ts }
+  // stockCode -> tick 스냅샷 { price, acmlVol, prdyVrss, prdyVrssSign, prdyCtrt, ... }
   prices: {},
-  // 마지막으로 받은 장운영 코드 (종목별)
+  // 장운영 코드 (종목별)
   mkopCodes: {},
-  // PnL 데이터 (userId별)
+  // PnL 데이터 (Go 서버 PNL_UPDATE 원형 그대로 저장)
   pnlData: null,
   // 최신 체결 이력
   executions: [],
 
-  ranking: [],
-  setRanking: (data) => set({ ranking: data }),
+  topChangeRate: [],
 
+  topBuyVolume: [],
+
+  sortedStocks: [],
+
+  setHomeUpdate: ({ topChangeRate, topBuyVolume }) =>
+    set({ topChangeRate, topBuyVolume }),
+
+  setSortedStocks: (stocks) => set({ sortedStocks: stocks }),
+
+  // WS PRICE_UPDATE 수신 시 전체 tick 덮어쓰기
   updatePrice: (data) => {
     const {
       stockCode,
@@ -21,10 +30,8 @@ export const useMarketStore = create((set, get) => ({
       prdyVrss,
       prdyVrssSign,
       prdyCtrt,
-      // 선택적 KIS 필드
       askp1,
       bidp1,
-      wghnAvrgStckPrc,
       stckOprc,
       stckHgpr,
       stckLwpr,
@@ -33,9 +40,9 @@ export const useMarketStore = create((set, get) => ({
       cttr,
       selnCntgCsnu,
       shnuCntgCsnu,
-      ccldDvsn,
       mkopCode,
     } = data;
+
     set((state) => ({
       prices: {
         ...state.prices,
@@ -47,7 +54,6 @@ export const useMarketStore = create((set, get) => ({
           prdyCtrt,
           askp1,
           bidp1,
-          wghnAvrgStckPrc,
           stckOprc,
           stckHgpr,
           stckLwpr,
@@ -56,13 +62,12 @@ export const useMarketStore = create((set, get) => ({
           cttr,
           selnCntgCsnu,
           shnuCntgCsnu,
-          ccldDvsn,
           mkopCode,
           ts: data.ts,
         },
       },
     }));
-    // 장운영 코드도 함께 업데이트
+
     if (mkopCode) {
       set((state) => ({
         mkopCodes: { ...state.mkopCodes, [stockCode]: mkopCode },
@@ -70,11 +75,24 @@ export const useMarketStore = create((set, get) => ({
     }
   },
 
-  updateMkopCode: (stockCode, code) => {
+  // 페이지 진입 시 Redis에서 가져온 초기 가격 seed.
+  // 이미 WS로 받은 실시간 데이터가 있으면 덮어쓰지 않는다.
+  seedPrice: (stockCode, partialTick) => {
+    set((state) => {
+      if (state.prices[stockCode]) return state; // 이미 실시간 데이터 있음 → 유지
+      return {
+        prices: {
+          ...state.prices,
+          [stockCode]: partialTick,
+        },
+      };
+    });
+  },
+
+  updateMkopCode: (stockCode, code) =>
     set((state) => ({
       mkopCodes: { ...state.mkopCodes, [stockCode]: code },
-    }));
-  },
+    })),
 
   setPnlData: (data) => set({ pnlData: data }),
 
@@ -84,10 +102,10 @@ export const useMarketStore = create((set, get) => ({
     })),
 
   getPrice: (code) => get().prices[code],
+
   isMarketOpen: (code) => {
-    const code_ = get().mkopCodes[code];
-    // NEW_MKOP_CLS_CODE "20" = 장중(정규)
-    // 없으면(mock mode) 허용
-    return !code_ || code_ === "20";
+    const mkop = get().mkopCodes[code];
+    // "20" = 정규장, 없으면 mock 모드 → 허용
+    return !mkop || mkop === "20";
   },
 }));

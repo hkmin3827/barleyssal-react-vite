@@ -21,7 +21,117 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+  margin-bottom: 10px;
+}
+
+/* 시장가 / 지정가 탭 */
+.orderTypeTabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
   margin-bottom: 20px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
+  padding: 4px;
+}
+.orderTypeTab {
+  padding: 8px;
+  border-radius: calc(var(--radius-md) - 2px);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  transition: all 0.15s;
+}
+.orderTypeActive {
+  background: var(--white) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 지정가 가격 입력 */
+.priceSection {
+  margin-bottom: 16px;
+}
+.priceLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+.priceInputWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.priceInput {
+  width: 100%;
+  height: 48px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0 40px 0 14px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: var(--white);
+  transition: border-color 0.15s;
+}
+.priceInput:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  outline: none;
+}
+.priceInput::placeholder {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 14px;
+}
+.priceUnit {
+  position: absolute;
+  right: 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+.priceDiff {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+}
+.priceDiffUp {
+  color: var(--red);
+  background: var(--red-light, #fef2f2);
+}
+.priceDiffDown {
+  color: var(--blue);
+  background: rgba(37, 99, 235, 0.07);
+}
+.priceDiffSame {
+  color: var(--text-secondary);
+  background: var(--bg-subtle);
+}
+
+/* 시장가 안내 */
+.marketNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+.marketNoticeIcon {
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 .sideTab {
   padding: 11px;
@@ -240,4 +350,16 @@
   to {
     transform: translateY(0);
   }
+}
+
+/* 주문 총액 (총액 우측 영역) */
+.totalRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+.totalNote {
+  font-size: 11px;
+  color: var(--text-muted);
 }
