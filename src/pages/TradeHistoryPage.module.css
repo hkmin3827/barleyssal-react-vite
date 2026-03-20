@@ -10,12 +10,10 @@
   padding: 24px 16px;
 }
 
-/* 헤더 */
 .headerRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 18px;
 }
 .title {
   font-size: 24px;
@@ -42,8 +40,12 @@
 .refreshBtn:disabled {
   opacity: 0.4;
 }
-
-/* 필터 */
+.dateText {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 13px;
+  margin-left: 3px;
+}
 .filterBar {
   display: flex;
   flex-direction: column;
@@ -77,7 +79,6 @@
   font-weight: 600 !important;
 }
 
-/* 요약 */
 .summary {
   font-size: 13px;
   color: var(--text-muted);
@@ -88,7 +89,6 @@
   font-weight: 600;
 }
 
-/* 로딩 / 에러 / 빈 */
 .center {
   display: flex;
   justify-content: center;
@@ -112,14 +112,12 @@
   font-size: 14px;
 }
 
-/* 리스트 */
 .list {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-/* 카드 */
 .card {
   background: var(--white);
   border: 1px solid var(--border);
@@ -128,7 +126,6 @@
   overflow: hidden;
 }
 
-/* 카드 헤더 */
 .cardHead {
   display: flex;
   align-items: center;
@@ -180,7 +177,6 @@
   flex-shrink: 0;
 }
 
-/* 상태 뱃지 */
 .statusTag {
   font-size: 12px;
   font-weight: 600;
@@ -205,7 +201,6 @@
   color: var(--text-muted);
 }
 
-/* 취소 버튼 */
 .cancelBtn {
   font-size: 12px;
   font-weight: 600;
@@ -223,7 +218,6 @@
   opacity: 0.5;
 }
 
-/* 카드 바디 */
 .cardBody {
   padding: 12px 16px;
   display: flex;
@@ -262,7 +256,6 @@
   font-weight: 400;
 }
 
-/* 무한 스크롤 */
 .loadMore {
   display: flex;
   justify-content: center;

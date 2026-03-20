@@ -3,46 +3,87 @@ import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import { useMarketStore } from "../store/marketStore";
 import { useWebSocket } from "../hooks/useWebSocket";
-import { setPrincipal } from "../api/springApi";
+import { getMyAccount, getMyHoldings, setPrincipal } from "../api/springApi";
 import { getStockName } from "../constants/stocks";
 import { fmtMoney, fmtPct } from "../utils/format";
 import styles from "./AccountPage.module.css";
 
-// Go 서버 PNL_UPDATE 필드
-// pnlData = {
-//   type, userId,
-//   deposit,             // 예수금
-//   principal,           // 원금
-//   stockValue,          // 보유 주식 평가금액 합계
-//   realtimeTotalEquity, // deposit + stockValue
-//   totalPnlAmount,      // 주식 평가손익 합계 (원금 차이 아님)
-//   totalPnlRate,        // 전체 수익률 % (원금 기준)
-//   holdings: [{
-//     stockCode, totalQuantity, avgPrice,
-//     currentPrice, holdValue, pnlAmount, pnlRate
-//   }],
-//   ts
-// }
-
 export default function AccountPage() {
   const navigate = useNavigate();
-  const { isLoggedIn, user } = useAuthStore();
+  const { isLoggedIn } = useAuthStore();
 
-  // Go WS PNL_UPDATE 수신 → marketStore에 저장
+  const [initData, setInitData] = useState(null);
+  const [accountLoading, setAccountLoading] = useState(true); // getMyAccount 로딩
+  const [holdingsLoading, setHoldingsLoading] = useState(false); // getMyHoldings 로딩
+
   const pnlData = useMarketStore((s) => s.pnlData);
 
-  // 원금 설정 (Spring API 유지)
   const [setPrinMode, setSetPrinMode] = useState(false);
   const [prinInput, setPrinInput] = useState("");
   const [prinLoading, setPrinLoading] = useState(false);
   const [prinError, setPrinError] = useState("");
 
-  // WS 계좌 구독 — SUBSCRIBE_ACCOUNT 전송 → Go가 PNL_UPDATE 즉시 푸시
   useWebSocket([], { subscribeAccount: true });
 
   useEffect(() => {
-    if (!isLoggedIn) navigate("/login");
+    if (!isLoggedIn) {
+      navigate("/login");
+      return;
+    }
   }, [isLoggedIn, navigate]);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    let cancelled = false;
+
+    (async () => {
+      setAccountLoading(true);
+      let account;
+      try {
+        account = await getMyAccount();
+        if (cancelled) return;
+        setInitData({
+          deposit: Number(account.deposit),
+          principal: Number(account.principal),
+          holdings: [],
+        });
+      } catch {
+      } finally {
+        if (!cancelled) setAccountLoading(false);
+      }
+
+      if (!account || cancelled) return;
+
+      setHoldingsLoading(true);
+      try {
+        const holdings = await getMyHoldings();
+        if (cancelled) return;
+        setInitData((prev) =>
+          prev
+            ? {
+                ...prev,
+                holdings: holdings.map((h) => ({
+                  stockCode: h.stockCode,
+                  totalQuantity: h.totalQuantity,
+                  avgPrice: Number(h.avgPrice),
+                  currentPrice: Number(h.avgPrice),
+                  holdValue: Number(h.avgPrice) * h.totalQuantity,
+                  pnlAmount: 0,
+                  pnlRate: 0,
+                })),
+              }
+            : prev,
+        );
+      } catch {
+      } finally {
+        if (!cancelled) setHoldingsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoggedIn]);
 
   const handleSetPrincipal = useCallback(async () => {
     const val = Number(prinInput);
@@ -56,7 +97,7 @@ export default function AccountPage() {
       await setPrincipal(val);
       setSetPrinMode(false);
       setPrinInput("");
-      // Spring 업데이트 후 Redis sync → 다음 PNL_UPDATE에 반영됨
+      window.location.reload();
     } catch (e) {
       setPrinError(e.response?.data?.message || "설정 실패");
     } finally {
@@ -64,8 +105,23 @@ export default function AccountPage() {
     }
   }, [prinInput]);
 
-  // ── pnlData 대기 중 스피너 ───────────────────────────────────────────
-  if (!pnlData) {
+  const display =
+    pnlData ??
+    (initData
+      ? {
+          deposit: initData.deposit,
+          principal: initData.principal,
+          stockValue: initData.holdings.reduce((s, h) => s + h.holdValue, 0),
+          realtimeTotalEquity:
+            initData.deposit +
+            initData.holdings.reduce((s, h) => s + h.holdValue, 0),
+          totalPnlAmount: 0,
+          totalPnlRate: 0,
+          holdings: initData.holdings,
+        }
+      : null);
+
+  if (accountLoading && !pnlData) {
     return (
       <div className={styles.page}>
         <div className={styles.inner}>
@@ -86,25 +142,22 @@ export default function AccountPage() {
     );
   }
 
-  // ── 표시 값 (Go PNL_UPDATE 그대로 사용) ────────────────────────────
+  if (!display) return null;
+
   const {
     deposit,
     principal,
     stockValue,
-    realtimeTotalEquity, // deposit + stockValue
-    totalPnlAmount, // 주식 평가손익 합계
+    realtimeTotalEquity,
+    totalPnlAmount,
     totalPnlRate,
     holdings = [],
-  } = pnlData;
+  } = display;
 
-  // 자산 분포: 총 자산(realtimeTotalEquity) 기준으로 각 비중 계산
   const distribution = [
     ...holdings
       .filter((h) => h.holdValue > 0)
-      .map((h) => ({
-        name: getStockName(h.stockCode),
-        value: h.holdValue,
-      })),
+      .map((h) => ({ name: getStockName(h.stockCode), value: h.holdValue })),
     { name: "예수금", value: deposit },
   ]
     .filter((d) => d.value > 0)
@@ -197,7 +250,7 @@ export default function AccountPage() {
             )}
           </div>
 
-          {/* 총 손익 — 주식 평가손익 합계 (원금-예수금 차이 아님) */}
+          {/* 총 손익 */}
           <div className={styles.infoCard}>
             <div className={styles.infoCardLabel}>총 손익</div>
             <div
@@ -288,9 +341,21 @@ export default function AccountPage() {
           </div>
         )}
 
-        {/* 보유 종목 */}
         <div className={styles.sectionTitle}>보유 종목</div>
-        {holdings.length === 0 ? (
+
+        {holdingsLoading && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              padding: "24px 0",
+            }}
+          >
+            <div className="spinner" />
+          </div>
+        )}
+
+        {!holdingsLoading && holdings.length === 0 ? (
           <div className={styles.empty}>보유 종목이 없습니다.</div>
         ) : (
           <div className={styles.holdingGrid}>

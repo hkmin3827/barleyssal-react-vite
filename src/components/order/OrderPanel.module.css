@@ -16,7 +16,6 @@
   margin-bottom: 16px;
 }
 
-/* 매수/매도 탭 */
 .sideTabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -24,7 +23,6 @@
   margin-bottom: 10px;
 }
 
-/* 시장가 / 지정가 탭 */
 .orderTypeTabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -50,7 +48,6 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* 지정가 가격 입력 */
 .priceSection {
   margin-bottom: 16px;
 }
@@ -115,7 +112,6 @@
   background: var(--bg-subtle);
 }
 
-/* 시장가 안내 */
 .marketNotice {
   display: flex;
   align-items: flex-start;
@@ -154,7 +150,6 @@
   border-color: var(--border) !important;
 }
 
-/* 호가 정보 목록 */
 .infoList {
   display: flex;
   flex-direction: column;
@@ -183,7 +178,6 @@
   color: var(--text-primary);
 }
 
-/* 수량 */
 .qtySection {
   margin-bottom: 16px;
 }
@@ -233,7 +227,6 @@
   -webkit-appearance: none;
 }
 
-/* 주문 총액 */
 .totalRow {
   display: flex;
   justify-content: space-between;
@@ -261,7 +254,6 @@
   border-radius: var(--radius-sm);
 }
 
-/* 주문 버튼 */
 .orderBtn {
   width: 100%;
   padding: 14px;
@@ -297,7 +289,6 @@
   margin-top: 10px;
 }
 
-/* 모바일 하단 바 */
 .mobileBar {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -314,6 +305,11 @@
   font-size: 15px;
   font-weight: 700;
 }
+.mobileBuyBtn:disabled,
+.mobileSellBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 .mobileSellBtn {
   padding: 12px;
   background: #4b5563;
@@ -322,8 +318,27 @@
   font-size: 15px;
   font-weight: 700;
 }
+.closedNotice {
+  font-size: 13px;
+  font-weight: 600;
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+.mobileClosedNotice {
+  font-size: 12px;
+  font-weight: 600;
+  color: #92400e;
+  background: #fef3c7;
+  text-align: center;
+  padding: 6px 16px;
+  border-top: 1px solid #fcd34d;
+}
 
-/* 모바일 시트 */
 .backdrop {
   position: fixed;
   inset: 0;
@@ -352,7 +367,6 @@
   }
 }
 
-/* 주문 총액 (총액 우측 영역) */
 .totalRight {
   display: flex;
   flex-direction: column;

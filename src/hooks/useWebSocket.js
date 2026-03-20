@@ -56,9 +56,7 @@ function connect() {
     }
   };
 
-  ws.onerror = () => {
-    // onclose가 뒤따라 호출되므로 재연결 처리 불필요
-  };
+  ws.onerror = () => {};
 }
 
 function disconnect() {
@@ -76,7 +74,7 @@ function disconnect() {
 export { wsSend };
 
 /**
- * @param {string[]} symbols - 구독할 종목 코드 배열. 빈 배열이면 가격 구독 없음.
+ * @param {string[]} symbols
  * @param {{ subscribeAccount?: boolean }} options
  *
  */
@@ -86,11 +84,11 @@ export function useWebSocket(symbols = [], { subscribeAccount = false } = {}) {
     updateMkopCode,
     setPnlData,
     addExecution,
+    addCancelledExecution,
     setHomeUpdate,
   } = useMarketStore();
   const { user } = useAuthStore();
 
-  // symbols를 ref로 관리해 클로저 stale 방지
   const symbolsRef = useRef(symbols);
   symbolsRef.current = symbols;
 
@@ -104,6 +102,9 @@ export function useWebSocket(symbols = [], { subscribeAccount = false } = {}) {
           // 재연결 시에도 구독 복원
           if (symbolsRef.current.length > 0) {
             wsSend({ type: "SUBSCRIBE_PRICE", symbols: symbolsRef.current });
+          }
+          if (user?.id) {
+            wsSend({ type: "IDENTIFY_USER", userId: String(user.id) });
           }
           if (subscribeAccount && user?.id) {
             wsSend({ type: "SUBSCRIBE_ACCOUNT", userId: String(user.id) });
@@ -129,6 +130,9 @@ export function useWebSocket(symbols = [], { subscribeAccount = false } = {}) {
         case "EXECUTION":
           addExecution(msg);
           break;
+
+        case "ORDER_CANCELLED":
+          addCancelledExecution(msg);
       }
     };
 
@@ -137,6 +141,9 @@ export function useWebSocket(symbols = [], { subscribeAccount = false } = {}) {
     if (ws?.readyState === WebSocket.OPEN) {
       if (symbolsRef.current.length > 0) {
         wsSend({ type: "SUBSCRIBE_PRICE", symbols: symbolsRef.current });
+      }
+      if (user?.id) {
+        wsSend({ type: "IDENTIFY_USER", userId: String(user.id) });
       }
       if (subscribeAccount && user?.id) {
         wsSend({ type: "SUBSCRIBE_ACCOUNT", userId: String(user.id) });
@@ -160,10 +167,6 @@ export function useWebSocket(symbols = [], { subscribeAccount = false } = {}) {
       wsSend({ type: "SUBSCRIBE_PRICE", symbols });
     }
 
-    return () => {
-      if (ws?.readyState === WebSocket.OPEN) {
-        wsSend({ type: "SUBSCRIBE_PRICE", symbols: [] });
-      }
-    };
+    return () => {};
   }, [JSON.stringify(symbols)]);
 }

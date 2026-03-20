@@ -19,6 +19,11 @@ export const getSortedStocks = (sort) =>
 export const getStockInfo = (stockCode) =>
   golang.get(`/api/stocks/info/${stockCode}`).then((r) => r.data);
 
+export const getStocksBatch = (codes) =>
+  golang
+    .get("/api/stocks/batch", { params: { codes: codes.join(",") } })
+    .then((r) => r.data);
+
 /**
  * @param {string} stockCode
  * @param {'1m'|'5m'|'10m'|'30m'} timeframe

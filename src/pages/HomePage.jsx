@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import {
   PieChart,
-  Pie,
   Cell,
+  Pie,
   ResponsiveContainer,
   Tooltip,
   Legend,
@@ -11,7 +11,6 @@ import { STOCKS } from "../constants/stocks";
 import { useMarketStore } from "../store/marketStore";
 import { useAuthStore } from "../store/authStore";
 import { useWebSocket } from "../hooks/useWebSocket";
-import { fmtPrice } from "../utils/format";
 import styles from "./HomePage.module.css";
 
 const PIE_COLORS = [
@@ -63,20 +62,11 @@ export default function HomePage() {
   const navigate = useNavigate();
   const { user, isLoggedIn } = useAuthStore();
 
-  // [변경] topChangeRate / topBuyVolume: Go WS home_update 이벤트로 수신
-  // BroadcastToAll 5초 주기 → ZSET ZREVRANGE TOP 10 기반
   const topChangeRate = useMarketStore((s) => s.topChangeRate); // 등락률 TOP 10
   const topBuyVolume = useMarketStore((s) => s.topBuyVolume); // 매수 비중 TOP 10 (buyVolPct 포함)
 
-  // [변경] useWebSocket([], ...) — 개별 종목 가격 구독 불필요
-  // 홈페이지는 home_update(BroadcastToAll)만 수신하면 충분
-  // [수정] 기존 오류: useWebSocket([ALL_CODES], ...) → [ALL_CODES]는 배열 안 배열 (이중 중첩)
   useWebSocket([], { subscribeAccount: false });
 
-  // ── 파이차트 데이터: topBuyVolume 기반 ──────────────────────────────────
-  // [변경] 기존: getPopularStocks() Spring DB 누적 체결 건수
-  //        변경: topBuyVolume[].buyVolPct — WS로 받은 금일 매수 비중(%)
-  // buyVolPct: PriceService.GetTopBuyVolume()에서 전체 score 합산 후 비중 계산
   const pieData = topBuyVolume.map((item, i) => ({
     name: item.stockName,
     value: parseFloat((item.buyVolPct ?? 0).toFixed(2)),
@@ -86,9 +76,6 @@ export default function HomePage() {
   }));
   const pieTotal = pieData.reduce((sum, d) => sum + d.value, 0);
 
-  // ── 퀵스탯 소스 ────────────────────────────────────────────────────────
-  // [수정] topByVolume(미정의) → topByBuyVol (topBuyVolume[0])
-  // [수정] ranking.length(미정의) → STOCKS.length (고정값)
   const topByBuyVol = topBuyVolume[0]; // 매수 비중 1위
   const topByChange = topChangeRate[0]; // 등락률 1위
 
@@ -104,11 +91,9 @@ export default function HomePage() {
 
       <div className={styles.pageInner}>
         <div className={styles.topGrid}>
-          {/* ── 파이차트: 인기종목 매매비중 (Go WS topBuyVolume 기반) ─────── */}
           <div className={styles.card}>
             <h2 className={styles.cardTitle}>인기종목 매매비중</h2>
             {pieData.length === 0 ? (
-              // WS home_update 첫 수신 전까지 (최대 5초) 스피너 표시
               <div className="spinner" />
             ) : (
               <>
@@ -161,8 +146,6 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* ── 등락률 TOP 10 (Go WS topChangeRate 기반) ───────────────── */}
-          {/* [변경] 수익률 TOP 10(Spring 체결 수익률) → 등락률 TOP 10(Go ZSET) */}
           <div className={styles.card}>
             <h2 className={styles.cardTitle}>등락률 TOP 10</h2>
             {topChangeRate.length === 0 ? (
@@ -177,7 +160,6 @@ export default function HomePage() {
                       className={styles.top10Item}
                       onClick={() => navigate(`/stock/${t.stockCode}`)}
                     >
-                      {/* 순위 배지 */}
                       <div
                         className={styles.top10Rank}
                         style={
@@ -189,13 +171,11 @@ export default function HomePage() {
                         {i + 1}
                       </div>
 
-                      {/* 종목 정보 */}
                       <div className={styles.top10Info}>
                         <div className={styles.top10Name}>{t.stockName}</div>
                         <div className={styles.top10Code}>{t.stockCode}</div>
                       </div>
 
-                      {/* 현재가 + 등락률 */}
                       <div className={styles.top10Right}>
                         <div className={styles.top10Price}>
                           {t.price ? `${t.price.toLocaleString()}원` : "-"}
@@ -216,10 +196,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* ── 퀵스탯 3열 ─────────────────────────────────────────────────── */}
         <div className={styles.statsGrid}>
-          {/* 매수 비중 1위 */}
-          {/* [수정] topByVolume(미정의) → topByBuyVol(topBuyVolume[0]) */}
           <div
             className={styles.statCard}
             style={{ background: "linear-gradient(135deg,#2563eb,#1d4ed8)" }}
@@ -235,7 +212,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* 최고 상승률 */}
           <div
             className={styles.statCard}
             style={{ background: "linear-gradient(135deg,#dc2626,#b91c1c)" }}
@@ -251,8 +227,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* 총 종목 수 */}
-          {/* [수정] ranking.length(미정의) → STOCKS.length */}
           <div
             className={styles.statCard}
             style={{ background: "linear-gradient(135deg,#7c3aed,#6d28d9)" }}

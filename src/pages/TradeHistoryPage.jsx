@@ -6,7 +6,6 @@ import { getStockName } from "../constants/stocks";
 import { fmtMoney } from "../utils/format";
 import styles from "./TradeHistoryPage.module.css";
 
-// ─── 상수 ─────────────────────────────────────────────────────────────
 const PAGE_SIZE = 20;
 
 const SIDE_FILTERS = [
@@ -44,20 +43,19 @@ function fmtInstant(isoStr) {
   );
 }
 
-// ─── 컴포넌트 ──────────────────────────────────────────────────────────
 export default function TradeHistoryPage() {
   const navigate = useNavigate();
   const { isLoggedIn } = useAuthStore();
 
-  const [allOrders, setAllOrders] = useState([]); // Spring에서 받은 전체 목록
+  const [allOrders, setAllOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [sideFilter, setSideFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [page, setPage] = useState(1); // 현재 표시 페이지
-  const [cancelling, setCancelling] = useState(null); // 취소 중인 orderId
+  const [page, setPage] = useState(1);
+  const [cancelling, setCancelling] = useState(null);
 
-  const loaderRef = useRef(null); // 무한스크롤 센티넬
+  const loaderRef = useRef(null);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -72,7 +70,6 @@ export default function TradeHistoryPage() {
     setError("");
     try {
       const data = await getMyOrders();
-      // 최신 순 정렬
       const sorted = [...data].sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
       );
@@ -84,7 +81,6 @@ export default function TradeHistoryPage() {
     }
   }, []);
 
-  // ── 필터 적용 ────────────────────────────────────────────────────────
   const filtered = allOrders.filter((o) => {
     if (sideFilter !== "ALL" && o.orderSide !== sideFilter) return false;
     if (statusFilter === "ALL") return true;
@@ -93,13 +89,11 @@ export default function TradeHistoryPage() {
     return o.orderStatus === statusFilter;
   });
 
-  // ── 페이지네이션 (표시 슬라이스) ──────────────────────────────────────
   const displayed = filtered.slice(0, page * PAGE_SIZE);
   const hasMore = displayed.length < filtered.length;
 
-  // ── 무한 스크롤 ─────────────────────────────────────────────────────
   useEffect(() => {
-    setPage(1); // 필터 바뀌면 페이지 초기화
+    setPage(1);
   }, [sideFilter, statusFilter]);
 
   useEffect(() => {
@@ -114,7 +108,6 @@ export default function TradeHistoryPage() {
     return () => observer.disconnect();
   }, [hasMore]);
 
-  // ── 주문 취소 ────────────────────────────────────────────────────────
   const handleCancel = async (orderId) => {
     if (!window.confirm("해당 주문을 취소하시겠습니까?")) return;
     setCancelling(orderId);
@@ -126,17 +119,20 @@ export default function TradeHistoryPage() {
         ),
       );
     } catch (e) {
-      alert(e.response?.data?.message || "취소 실패. 잠시 후 다시 시도하세요.");
+      if (e.response?.status !== 429) {
+        addToast(
+          e.response?.data?.message || "취소 실패. 잠시 후 다시 시도하세요.",
+          "error",
+        );
+      }
     } finally {
       setCancelling(null);
     }
   };
 
-  // ─────────────────────────────────────────────────────────────────────
   return (
     <div className={styles.page}>
       <div className={styles.inner}>
-        {/* 헤더 */}
         <div className={styles.headerRow}>
           <h1 className={styles.title}>거래 내역</h1>
           <button
@@ -160,10 +156,9 @@ export default function TradeHistoryPage() {
             </svg>
           </button>
         </div>
+        <p className={styles.dateText}>최근 3일</p>
 
-        {/* 필터 바 */}
         <div className={styles.filterBar}>
-          {/* 매수/매도 */}
           <div className={styles.filterGroup}>
             {SIDE_FILTERS.map((f) => (
               <button
@@ -175,7 +170,6 @@ export default function TradeHistoryPage() {
               </button>
             ))}
           </div>
-          {/* 상태 */}
           <div className={styles.filterGroup}>
             {STATUS_FILTERS.map((f) => (
               <button
@@ -189,22 +183,18 @@ export default function TradeHistoryPage() {
           </div>
         </div>
 
-        {/* 요약 */}
         <div className={styles.summary}>
           총 <strong>{filtered.length}</strong>건
         </div>
 
-        {/* 로딩 */}
         {loading && (
           <div className={styles.center}>
             <div className="spinner" />
           </div>
         )}
 
-        {/* 에러 */}
         {!loading && error && <div className={styles.errorBox}>{error}</div>}
 
-        {/* 빈 상태 */}
         {!loading && !error && filtered.length === 0 && (
           <div className={styles.empty}>
             <svg
@@ -227,7 +217,6 @@ export default function TradeHistoryPage() {
           </div>
         )}
 
-        {/* 주문 목록 */}
         {!loading && !error && displayed.length > 0 && (
           <div className={styles.list}>
             {displayed.map((order) => {
@@ -245,7 +234,6 @@ export default function TradeHistoryPage() {
 
               return (
                 <div key={order.id} className={styles.card}>
-                  {/* 카드 헤더 */}
                   <div className={styles.cardHead}>
                     <div className={styles.cardLeft}>
                       <span
@@ -282,7 +270,6 @@ export default function TradeHistoryPage() {
                       )}
                   </div>
 
-                  {/* 카드 바디 */}
                   <div className={styles.cardBody}>
                     <div className={styles.row}>
                       <span className={styles.rowLabel}>주문 유형</span>
@@ -346,7 +333,6 @@ export default function TradeHistoryPage() {
           </div>
         )}
 
-        {/* 무한 스크롤 센티넬 */}
         {hasMore && (
           <div ref={loaderRef} className={styles.loadMore}>
             <div className="spinner" style={{ width: 24, height: 24 }} />

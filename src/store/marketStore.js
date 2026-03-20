@@ -1,14 +1,13 @@
 import { create } from "zustand";
 
 export const useMarketStore = create((set, get) => ({
-  // stockCode -> tick 스냅샷 { price, acmlVol, prdyVrss, prdyVrssSign, prdyCtrt, ... }
-  prices: {},
-  // 장운영 코드 (종목별)
-  mkopCodes: {},
-  // PnL 데이터 (Go 서버 PNL_UPDATE 원형 그대로 저장)
-  pnlData: null,
-  // 최신 체결 이력
+  prices: {}, // stockInfo 스냅샷
+
+  mkopCodes: {}, // PnL 데이터 (Go 서버 PNL_UPDATE 원형 그대로 저장)
+  pnlData: null, // 최신 체결 이력
   executions: [],
+
+  cancelledExecutions: [],
 
   topChangeRate: [],
 
@@ -21,14 +20,12 @@ export const useMarketStore = create((set, get) => ({
 
   setSortedStocks: (stocks) => set({ sortedStocks: stocks }),
 
-  // WS PRICE_UPDATE 수신 시 전체 tick 덮어쓰기
   updatePrice: (data) => {
     const {
       stockCode,
       price,
       acmlVol,
       prdyVrss,
-      prdyVrssSign,
       prdyCtrt,
       askp1,
       bidp1,
@@ -50,7 +47,6 @@ export const useMarketStore = create((set, get) => ({
           price,
           acmlVol,
           prdyVrss,
-          prdyVrssSign,
           prdyCtrt,
           askp1,
           bidp1,
@@ -75,17 +71,19 @@ export const useMarketStore = create((set, get) => ({
     }
   },
 
-  // 페이지 진입 시 Redis에서 가져온 초기 가격 seed.
-  // 이미 WS로 받은 실시간 데이터가 있으면 덮어쓰지 않는다.
   seedPrice: (stockCode, partialTick) => {
     set((state) => {
-      if (state.prices[stockCode]) return state; // 이미 실시간 데이터 있음 → 유지
-      return {
-        prices: {
-          ...state.prices,
-          [stockCode]: partialTick,
-        },
-      };
+      const next = { ...state };
+      if (!state.prices[stockCode]) {
+        next.prices = { ...state.prices, [stockCode]: partialTick };
+      }
+      if (partialTick.mKopCode && !state.mkopCodes[stockCode]) {
+        next.mkopCodes = {
+          ...state.mkopCodes,
+          [stockCode]: partialTick.mKopCode,
+        };
+      }
+      return next;
     });
   },
 
@@ -101,11 +99,21 @@ export const useMarketStore = create((set, get) => ({
       executions: [exec, ...state.executions].slice(0, 20),
     })),
 
+  addCancelledExecution: (exec) =>
+    set((state) => ({
+      cancelledExecutions: [exec, ...state.cancelledExecutions].slice(0, 20),
+    })),
+
   getPrice: (code) => get().prices[code],
 
   isMarketOpen: (code) => {
     const mkop = get().mkopCodes[code];
-    // "20" = 정규장, 없으면 mock 모드 → 허용
-    return !mkop || mkop === "20";
+    return !mkop || mkop[0] === "2";
   },
+  clearUserData: () =>
+    set({
+      pnlData: null,
+      executions: [],
+      cancelledExecutions: [],
+    }),
 }));

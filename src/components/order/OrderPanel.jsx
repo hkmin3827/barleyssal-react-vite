@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { placeOrder } from "../../api/springApi";
 import styles from "./OrderPanel.module.css";
+import { useToastStore } from "../../store/toastStore";
 
 export default function OrderPanel({
   stockCode,
@@ -14,27 +15,25 @@ export default function OrderPanel({
   const [qty, setQty] = useState(1);
   const [limitPrice, setLimitPrice] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { addToast } = useToastStore.getState();
 
   const currentPrice = tick?.price ?? 0;
 
   const priceForCalc =
     orderType === "LIMIT" ? parseFloat(limitPrice) || 0 : currentPrice;
   const estTotal = qty > 0 ? priceForCalc * qty : 0;
+  const neededDepositTotal = qty > 0 ? tick?.stckHgpr * qty : 0;
 
   const handleSideChange = (newSide) => {
     setSide(newSide);
-    setError("");
   };
 
   const handleOrderTypeChange = (type) => {
     setOrderType(type);
     setLimitPrice("");
-    setError("");
   };
 
-  // 콤마 제거 후 숫자만 저장, 표시는 toLocaleString
   const handleLimitPriceChange = (e) => {
     const raw = e.target.value.replace(/[^0-9]/g, "");
     setLimitPrice(raw);
@@ -42,23 +41,22 @@ export default function OrderPanel({
 
   const handleSubmit = async () => {
     if (!isOpen) {
-      setError("장 운영 시간이 아닙니다.");
+      addToast("장 운영 시간이 아닙니다.");
       return;
     }
     if (!qty || qty <= 0) {
-      setError("수량을 입력하세요.");
+      addToast("수량을 입력하세요.");
       return;
     }
     if (orderType === "LIMIT") {
       const lp = parseFloat(limitPrice);
       if (!limitPrice || isNaN(lp) || lp <= 0) {
-        setError("주문 가격을 입력하세요.");
+        addToast("주문 가격을 입력하세요.");
         return;
       }
     }
 
     setLoading(true);
-    setError("");
     try {
       const lp = orderType === "LIMIT" ? parseFloat(limitPrice) : null;
       const result = await placeOrder(stockCode, side, orderType, qty, lp);
@@ -66,10 +64,8 @@ export default function OrderPanel({
       setMobileOpen(false);
       setQty(1);
       setLimitPrice("");
+      addToast("주문이 성공적으로 접수되었습니다.", "success");
     } catch (e) {
-      setError(
-        e.response?.data?.message || "주문 실패. 잠시 후 다시 시도하세요.",
-      );
     } finally {
       setLoading(false);
     }
@@ -95,7 +91,6 @@ export default function OrderPanel({
         </button>
       </div>
 
-      {/* 시장가 / 지정가 탭 */}
       <div className={styles.orderTypeTabs}>
         <button
           className={`${styles.orderTypeTab} ${orderType === "MARKET" ? styles.orderTypeActive : ""}`}
@@ -111,7 +106,6 @@ export default function OrderPanel({
         </button>
       </div>
 
-      {/* 호가 정보 */}
       <div className={styles.infoList}>
         {[
           ["현재가", tick ? `${currentPrice.toLocaleString()}원` : "-"],
@@ -130,8 +124,8 @@ export default function OrderPanel({
             "var(--blue)",
           ],
           [
-            "거래량",
-            tick?.acmlVol ? `${tick.acmlVol.toLocaleString()}주` : "-",
+            "실시간 체결 거래량",
+            tick?.cntgVol ? `${tick.cntgVol.toLocaleString()}주` : "-",
           ],
         ].map(([label, val, color]) => (
           <div key={label} className={styles.infoRow}>
@@ -146,7 +140,6 @@ export default function OrderPanel({
         ))}
       </div>
 
-      {/* 지정가: 주문 가격 입력 */}
       {orderType === "LIMIT" && (
         <div className={styles.priceSection}>
           <div className={styles.priceLabel}>주문 가격</div>
@@ -187,7 +180,6 @@ export default function OrderPanel({
         </div>
       )}
 
-      {/* 시장가: 안내 메시지 */}
       {orderType === "MARKET" && (
         <div className={styles.marketNotice}>
           <span className={styles.marketNoticeIcon}>ℹ</span>
@@ -195,7 +187,6 @@ export default function OrderPanel({
         </div>
       )}
 
-      {/* 수량 */}
       <div className={styles.qtySection}>
         <div className={styles.qtyLabel}>주문 수량</div>
         <div className={styles.qtyRow}>
@@ -221,7 +212,6 @@ export default function OrderPanel({
         </div>
       </div>
 
-      {/* 총액 */}
       <div className={styles.totalRow}>
         <span className={styles.totalLabel}>
           {orderType === "MARKET" ? "예상 주문 총액" : "주문 총액"}
@@ -235,14 +225,28 @@ export default function OrderPanel({
           )}
         </div>
       </div>
+      {orderType === "MARKET" && side === "BUY" && (
+        <div className={styles.totalRow}>
+          <span className={styles.totalLabel}>필요 예수금 총액</span>
+          <div className={styles.totalRight}>
+            <span className={styles.totalVal}>
+              {neededDepositTotal > 0
+                ? neededDepositTotal.toLocaleString()
+                : "-"}
+              원
+            </span>
+          </div>
+        </div>
+      )}
 
-      {error && <div className={styles.error}>{error}</div>}
+      {!isOpen && (
+        <div className={styles.closedNotice}>장 운영 시간이 아닙니다.</div>
+      )}
 
-      {/* 주문 버튼 */}
       <button
         className={`${styles.orderBtn} ${side === "BUY" ? styles.orderBuyBtn : styles.orderSellBtn}`}
         onClick={handleSubmit}
-        disabled={loading}
+        disabled={!isOpen || loading}
       >
         {loading ? (
           <span className="spinner-sm" />
@@ -262,6 +266,7 @@ export default function OrderPanel({
         <div className={styles.mobileBar}>
           <button
             className={styles.mobileBuyBtn}
+            disabled={!isOpen}
             onClick={() => {
               setSide("BUY");
               setMobileOpen(true);
@@ -271,6 +276,7 @@ export default function OrderPanel({
           </button>
           <button
             className={styles.mobileSellBtn}
+            disabled={!isOpen}
             onClick={() => {
               setSide("SELL");
               setMobileOpen(true);
@@ -279,6 +285,11 @@ export default function OrderPanel({
             매도
           </button>
         </div>
+        {!isOpen && (
+          <div className={styles.mobileClosedNotice}>
+            장 운영 시간이 아닙니다.
+          </div>
+        )}
         {mobileOpen && (
           <>
             <div

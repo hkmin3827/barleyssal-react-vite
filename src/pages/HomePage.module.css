@@ -84,7 +84,6 @@
   font-size: 14px;
 }
 
-/* TOP 10 */
 .top10List {
   display: flex;
   flex-direction: column;
@@ -148,7 +147,6 @@
   margin-top: 2px;
 }
 
-/* 퀵스탯 */
 .statsGrid {
   display: grid;
   grid-template-columns: 1fr;

@@ -1,20 +1,22 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
-import { logout } from "../../api/springApi";
+import { logout as apiLogout } from "../../api/springApi";
 import { useMarketStore } from "../../store/marketStore";
 import styles from "./TopBar.module.css";
-import logo from "../../assets/barleyssal_logo.png";
+import logo from "../../assets/barleyssal_logo.svg";
 
 export default function TopBar() {
-  const { isLoggedIn, user, logout: storeLogout } = useAuthStore();
+  const { isLoggedIn, user, logout } = useAuthStore();
   const executions = useMarketStore((s) => s.executions);
+  const cancelledExecutions = useMarketStore((s) => s.cancelledExecutions);
+
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await apiLogout();
+      logout();
     } catch {}
-    storeLogout();
     navigate("/login");
   };
 
@@ -28,7 +30,6 @@ export default function TopBar() {
           <span className={styles.logoText}>보리쌀 모의투자</span>
         </Link>
 
-        {/* 데스크탑 네비 */}
         <nav className={styles.desktopNav}>
           <Link to="/" className={styles.navLink}>
             홈
@@ -48,6 +49,12 @@ export default function TopBar() {
           {executions.length > 0 && (
             <span className={styles.execBadge}>
               ⚡ {executions[0]?.orderSide === "BUY" ? "매수" : "매도"} 체결
+            </span>
+          )}
+          {cancelledExecutions.length > 0 && (
+            <span className={styles.execBadge}>
+              ⚡ {cancelledExecutions[0]?.orderSide === "BUY" ? "매수" : "매도"}
+              취소됨
             </span>
           )}
           {isLoggedIn ? (

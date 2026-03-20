@@ -4,23 +4,14 @@ import { STOCKS } from "../constants/stocks";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useMarketStore } from "../store/marketStore";
 import { getSortedStocks } from "../api/goApi";
-import { prdySign } from "../utils/format";
 import styles from "./StocksPage.module.css";
 
 const ALL_CODES = STOCKS.map((s) => s.code);
 
-// 이름순: 정적 데이터 — 컴포넌트 외부에서 1회만 생성 (마운트마다 재생성 방지)
-const STOCKS_BY_NAME = [...STOCKS].sort((a, b) =>
-  a.name.localeCompare(b.name, "ko"),
-);
-
-// 정렬 탭 정의
-// useApi: false → 백엔드 호출 없이 프론트엔드 자체 처리
-// useApi: true  → GET /api/stocks?sort={key} 호출
 const SORT_TABS = [
-  { key: "name", label: "이름순", useApi: false },
-  { key: "changeRate", label: "등락률순", useApi: true },
-  { key: "acmlVol", label: "거래량순", useApi: true },
+  { key: "name", label: "이름순" },
+  { key: "changeRate", label: "등락률순" },
+  { key: "acmlVol", label: "거래량순" },
 ];
 
 function TrendIcon({ sign }) {
@@ -62,28 +53,18 @@ function TrendIcon({ sign }) {
 }
 
 export default function StocksPage() {
-  // ── WS 구독 유지 ─────────────────────────────────────────────────────────
-  // 실시간 tick → prices 스토어 갱신 → mergedList 자동 반영
-  // 언마운트 시: SUBSCRIBE_PRICE:[] 전송 → 서버에서 ALL_CODES 구독 전체 해제
-  // StockDetailPage 진입 시: SUBSCRIBE_PRICE:[code] 전송 → 단일 종목만 구독
   useWebSocket(ALL_CODES, { subscribeAccount: false });
 
   const navigate = useNavigate();
 
-  // prices: WS tick 수신 시 갱신되는 실시간 오버레이 소스
   const prices = useMarketStore((s) => s.prices);
-  // sortedStocks: REST API 응답 (Redis ZSET 기준 정렬된 배열)
   const sortedStocks = useMarketStore((s) => s.sortedStocks);
   const setSortedStocks = useMarketStore((s) => s.setSortedStocks);
 
   const [query, setQuery] = useState("");
-  // [수정] "change" → "changeRate" (SORT_TABS 키와 일치)
   const [sort, setSort] = useState("changeRate");
   const [loading, setLoading] = useState(false);
-  // 이름순 탭 전용 로컬 리스트 (API 미호출, handleTabClick에서 생성)
-  const [nameList, setNameList] = useState([]);
 
-  // ── fetchSorted: 백엔드 정렬 API 호출 ────────────────────────────────────
   const fetchSorted = useCallback(
     async (sortKey) => {
       setLoading(true);
@@ -101,45 +82,20 @@ export default function StocksPage() {
     [setSortedStocks],
   );
 
-  // ── 초기 마운트: 기본 탭(등락률순) fetch ─────────────────────────────────
   useEffect(() => {
     fetchSorted("changeRate");
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── handleTabClick: 탭 전환 및 같은 탭 재클릭 처리 ───────────────────────
-  // [변경] 기존: if (key === sort) return  → 같은 탭 재클릭 무시했음
-  //        변경: guard 제거 → 같은 탭 재클릭도 Redis 최신 정렬을 re-fetch
-  //        이유: 5초마다 ZSET이 갱신되므로 재클릭 시 최신 순위 반영 가능
   const handleTabClick = useCallback(
     (key) => {
       setSort(key);
-      if (key === "name") {
-        // 이름순: API 미호출. prices 스토어로 즉시 보완.
-        // 같은 "이름순" 탭 재클릭 시에도 prices 최신값으로 nameList 재생성.
-        const enriched = STOCKS_BY_NAME.map((s) => ({
-          stockCode: s.code,
-          stockName: s.name,
-          price: prices[s.code]?.price ?? 0,
-          changeRate: prices[s.code]?.prdyCtrt ?? 0,
-          prdyVrss: prices[s.code]?.prdyVrss ?? 0,
-          prdyVrssSign: prices[s.code]?.prdyVrssSign ?? "",
-          acmlVol: prices[s.code]?.acmlVol ?? 0,
-        }));
-        setNameList(enriched);
-      } else {
-        // API 탭: 같은 탭 재클릭 포함 항상 Redis re-fetch
-        fetchSorted(key);
-      }
+      fetchSorted(key);
     },
-    [fetchSorted, prices],
+    [fetchSorted],
   );
 
-  // ── rawList: 현재 탭의 기본 정렬 목록 ────────────────────────────────────
-  const rawList = sort === "name" ? nameList : sortedStocks;
+  const rawList = sortedStocks;
 
-  // ── mergedList: rawList + prices 실시간 오버레이 ──────────────────────────
-  // [핵심] 정렬 순서는 Redis 기준 유지. WS tick이 오면 가격/등락률만 갱신.
-  // useMemo: rawList 또는 prices가 변경될 때만 재계산 (O(N) merge, 재정렬 없음)
   const mergedList = useMemo(
     () =>
       rawList.map((item) => {
@@ -150,14 +106,12 @@ export default function StocksPage() {
           price: tick.price ?? item.price,
           changeRate: tick.prdyCtrt ?? item.changeRate,
           prdyVrss: tick.prdyVrss ?? item.prdyVrss,
-          prdyVrssSign: tick.prdyVrssSign ?? item.prdyVrssSign,
           acmlVol: tick.acmlVol ?? item.acmlVol,
         };
       }),
     [rawList, prices],
   );
 
-  // ── displayList: 검색 필터 적용 ──────────────────────────────────────────
   const displayList = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return mergedList;
@@ -169,7 +123,6 @@ export default function StocksPage() {
   return (
     <div className={styles.page}>
       <div className={styles.inner}>
-        {/* 검색 + 정렬 탭 */}
         <div className={styles.filterCard}>
           <div className={styles.searchWrap}>
             <svg
@@ -194,7 +147,6 @@ export default function StocksPage() {
             />
           </div>
 
-          {/* [수정] 구 탭 [이름/가격/등락률] → 신 탭 [이름/등락률/거래량] */}
           <div className={styles.sortBtns}>
             {SORT_TABS.map(({ key, label }) => (
               <button
@@ -208,10 +160,8 @@ export default function StocksPage() {
           </div>
         </div>
 
-        {/* 로딩 인디케이터 */}
         {loading && <div className="spinner" />}
 
-        {/* 데스크탑 테이블 */}
         {!loading && (
           <div className={styles.tableWrap}>
             <table className={styles.table}>
@@ -222,19 +172,17 @@ export default function StocksPage() {
                   <th>현재가</th>
                   <th>전일대비</th>
                   <th>등락률</th>
-                  <th>거래량</th>
+                  <th>누적거래량</th>
                 </tr>
               </thead>
               <tbody>
-                {/* [수정] 구 list(ranking 참조) → 신 displayList(sortedStocks + prices 오버레이) */}
                 {displayList.map((s) => {
                   const sign =
-                    prdySign(s.prdyVrssSign) ||
-                    (s.changeRate > 0
+                    s.changeRate > 0
                       ? "up"
                       : s.changeRate < 0
                         ? "down"
-                        : "flat");
+                        : "flat";
                   return (
                     <tr
                       key={s.stockCode}
@@ -248,7 +196,7 @@ export default function StocksPage() {
                       </td>
                       <td className={`${styles.changeCell} ${sign}`}>
                         {s.prdyVrss != null
-                          ? `${s.prdyVrss > 0 ? "+" : ""}${s.prdyVrss?.toLocaleString()}`
+                          ? `${sign === "up" ? "▲" : sign === "down" ? "▼" : ""} ${s.prdyVrss.toLocaleString()}`
                           : "-"}
                       </td>
                       <td className={`${styles.rateCell} ${sign}`}>
@@ -273,7 +221,6 @@ export default function StocksPage() {
           </div>
         )}
 
-        {/* 모바일 카드 */}
         {!loading && (
           <div className={styles.mobileList}>
             {displayList.map((s) => {

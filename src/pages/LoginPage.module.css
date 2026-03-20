@@ -84,6 +84,12 @@
 .field input::placeholder {
   color: var(--text-muted);
 }
+.pwMsg {
+  font-size: 11px;
+  padding: 0 10px;
+  margin-bottom: 5px;
+  color: #555;
+}
 .error {
   font-size: 13px;
   color: var(--red);
@@ -106,4 +112,83 @@
 }
 .submit:disabled {
   opacity: 0.65;
+}
+
+.forgotLink {
+  display: block;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s;
+}
+.forgotLink:hover {
+  color: var(--blue);
+  text-decoration: underline;
+}
+
+.forgotWrap {
+  display: flex;
+  flex-direction: column;
+}
+.backLink {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  align-self: flex-start;
+  padding: 4px 0;
+  transition: color 0.15s;
+}
+.backLink:hover {
+  color: var(--blue);
+}
+.forgotTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+.forgotDesc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.sentIcon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.sentTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+  margin-bottom: 10px;
+}
+.sentDesc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.7;
+  margin-bottom: 24px;
+}
+.sentDesc strong {
+  color: var(--text-primary);
+}
+.backBtn {
+  padding: 13px;
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.backBtn:hover {
+  background: var(--border);
 }

@@ -53,24 +53,16 @@ export default function CandleChart({
         // fixRightEdge: true,
       },
       localization: {
-        // timeFormatter: (tick) => {
-        //   // tick은 Unix 타임스탬프(초)입니다.
-        //   // new Date(ms) 객체는 생성 시점의 브라우저 로컬 타임존을 따릅니다.
-        // return new Date(tick * 1000).toLocaleString();
-        // },
         timeFormatter: (businessDayOrTimestamp) => {
           if (!businessDayOrTimestamp) return "";
-          // intraday 모드일 때는 숫자(timestamp)가 들어옴
           if (typeof businessDayOrTimestamp === "number") {
             const date = new Date(businessDayOrTimestamp * 1000);
-            // KST(+9) 오프셋을 이미 적용한 timestamp이므로, getUTC 메서드를 사용해 문자열을 만듭니다.
             const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
             const dd = String(date.getUTCDate()).padStart(2, "0");
             const hh = String(date.getUTCHours()).padStart(2, "0");
             const min = String(date.getUTCMinutes()).padStart(2, "0");
             return `${mm}/${dd} ${hh}:${min}`;
           }
-          // period(일봉) 모드일 때는 문자열('YYYY-MM-DD')이 들어옴
           return String(businessDayOrTimestamp);
         },
       },
@@ -140,17 +132,14 @@ export default function CandleChart({
 
         time = utcTime - tzOffsetSec;
       } else {
-        // [수정 포인트] 일봉(period) 모드 날짜 파싱
         const d = bar.date || bar.t || "";
 
         if (d.includes("-")) {
-          // 1. 이미 'YYYY-MM-DD' 형식인 경우 (수정된 Go 서버 데이터)
           time = d;
         } else if (d.length >= 8) {
-          // 2. 'YYYYMMDD' 형식인 경우 (기존 노드 서버 또는 API 원본)
           time = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
         } else {
-          continue; // 날짜 형식이 잘못된 데이터는 스킵
+          continue;
         }
       }
       if (!time) continue;
@@ -214,7 +203,6 @@ export default function CandleChart({
 /** 'YYYYMMDDHHmm' → Unix seconds (KST) */
 function parseIntraTime(t) {
   if (!t || t.length < 12) return null;
-  // 서버에서 받은 시간(t)이 UTC 기준이므로, 'Z'를 붙여 파싱합니다.
   const d = new Date(
     `${t.slice(0, 4)}-${t.slice(4, 6)}-${t.slice(6, 8)}T${t.slice(8, 10)}:${t.slice(10, 12)}:00Z`,
   );

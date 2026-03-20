@@ -23,16 +23,3 @@ export const fmtMoney = (v) => {
 
   return n.toLocaleString("ko-KR") + "원";
 };
-
-export const prdySign = (sign) => {
-  // 1:상한 2:상승 → up / 3:보합 → flat / 4:하한 5:하락 → down
-  if (sign === "1" || sign === "2") return "up";
-  if (sign === "4" || sign === "5") return "down";
-  return "flat";
-};
-
-export const signStr = (sign) => {
-  if (sign === "1" || sign === "2") return "▲";
-  if (sign === "4" || sign === "5") return "▼";
-  return "-";
-};

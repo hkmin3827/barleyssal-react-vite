@@ -40,15 +40,13 @@ function getStockName(code) {
 
 function parseHourly(raw) {
   try {
-    const buckets =
-      raw?.hourlyData?.hourly_trades?.buckets ?? raw?.hourlyData?.buckets ?? [];
-    return buckets.map((b) => {
-      const hour = (b.key_as_string ?? b.key ?? "").slice(11, 16);
-      const sides = b.by_side?.buckets ?? [];
-      const buy = sides.find((s) => s.key === "BUY")?.doc_count ?? 0;
-      const sell = sides.find((s) => s.key === "SELL")?.doc_count ?? 0;
-      return { hour, 매수: buy, 매도: sell };
-    });
+    const buckets = raw?.hourlyData;
+    if (!Array.isArray(buckets)) return [];
+    return buckets.map((b) => ({
+      hour: (b.hour ?? "").slice(11, 16),
+      매수: b.bySide?.BUY ?? 0,
+      매도: b.bySide?.SELL ?? 0,
+    }));
   } catch {
     return [];
   }
@@ -56,13 +54,11 @@ function parseHourly(raw) {
 
 function parseDaily(raw) {
   try {
-    const buckets =
-      raw?.dailyEfficiency?.daily_stats?.buckets ??
-      raw?.dailyEfficiency?.buckets ??
-      [];
+    const buckets = raw?.dailyEfficiency;
+    if (!Array.isArray(buckets)) return [];
     return buckets.map((b) => ({
-      date: (b.key_as_string ?? b.key ?? "").slice(0, 10),
-      체결: b.executed_count?.doc_count ?? b.doc_count ?? 0,
+      date: (b.date ?? "").slice(0, 10),
+      체결: b.executedOrders ?? 0,
     }));
   } catch {
     return [];
@@ -101,7 +97,6 @@ export default function RankingPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // 파이차트 데이터
   const total = Object.values(popularData).reduce((a, b) => a + Number(b), 0);
   const pieData = useMemo(
     () =>
@@ -128,7 +123,6 @@ export default function RankingPage() {
           </span>
         </div>
 
-        {/* 탭 */}
         <div className={styles.tabBar}>
           {TABS.map((t) => (
             <button
@@ -145,7 +139,6 @@ export default function RankingPage() {
           <div className="spinner" />
         ) : (
           <>
-            {/* ── 인기 종목 파이차트 ── */}
             {tab === "popular" && (
               <div className={styles.card}>
                 <div className={styles.cardHeader}>
@@ -212,11 +205,10 @@ export default function RankingPage() {
               </div>
             )}
 
-            {/* ── 수익률 TOP ── */}
             {tab === "profit" && (
               <div className={styles.card}>
                 <div className={styles.cardHeader}>
-                  <span className={styles.cardTitle}>수익률 TOP 10</span>
+                  <span className={styles.cardTitle}>매도 수익률 TOP 10</span>
                   <span className={styles.cardSub}>최근 14일 매도 기준</span>
                 </div>
                 {topTrades.length === 0 ? (
@@ -263,7 +255,6 @@ export default function RankingPage() {
               </div>
             )}
 
-            {/* ── 시간대별 거래 ── */}
             {tab === "hourly" && (
               <div className={styles.card}>
                 <div className={styles.cardHeader}>
@@ -310,7 +301,6 @@ export default function RankingPage() {
               </div>
             )}
 
-            {/* ── 일별 체결 ── */}
             {tab === "daily" && (
               <div className={styles.card}>
                 <div className={styles.cardHeader}>

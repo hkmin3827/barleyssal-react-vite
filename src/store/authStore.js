@@ -1,14 +1,20 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { useMarketStore } from "./marketStore";
+import { useWatchlistStore } from "./watchlistStore";
 
 export const useAuthStore = create(
   persist(
     (set) => ({
-      user: null, // { id, email, role, userName, active }
+      user: null,
       isLoggedIn: false,
 
       login: (userData) => set({ user: userData, isLoggedIn: true }),
-      logout: () => set({ user: null, isLoggedIn: false }),
+      logout: () => {
+        useMarketStore.getState().clearUserData();
+        useWatchlistStore.getState().reset();
+        set({ user: null, isLoggedIn: false });
+      },
       setUser: (userData) => set({ user: userData }),
     }),
     { name: "barleyssal-auth" },

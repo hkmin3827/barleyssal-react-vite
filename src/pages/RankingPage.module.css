@@ -26,7 +26,6 @@
   color: var(--text-muted);
 }
 
-/* 탭 */
 .tabBar {
   display: flex;
   gap: 6px;
@@ -53,7 +52,6 @@
   font-weight: 600;
 }
 
-/* 카드 */
 .card {
   background: var(--white);
   border: 1px solid var(--border);
@@ -79,7 +77,6 @@
   color: var(--text-muted);
 }
 
-/* 파이 리스트 */
 .listGrid {
   display: flex;
   flex-direction: column;
@@ -135,7 +132,6 @@
   flex-shrink: 0;
 }
 
-/* 수익률 TOP 리스트 */
 .profitList {
   display: flex;
   flex-direction: column;

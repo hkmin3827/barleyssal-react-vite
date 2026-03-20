@@ -15,7 +15,7 @@ export function HourlyVolumeChart({ data = [] }) {
     return <div className={styles.empty}>데이터가 없습니다.</div>;
   return (
     <div className={styles.wrap}>
-      <ResponsiveContainer width="100%" height={280}>
+      <ResponsiveContainer width="100%" height={400}>
         <BarChart
           data={data}
           margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
@@ -49,7 +49,7 @@ export function DailyEfficiencyChart({ data = [] }) {
     return <div className={styles.empty}>데이터가 없습니다.</div>;
   return (
     <div className={styles.wrap}>
-      <ResponsiveContainer width="100%" height={280}>
+      <ResponsiveContainer width="100%" height={400}>
         <BarChart
           data={data}
           margin={{ top: 8, right: 16, left: 0, bottom: 8 }}

@@ -6,7 +6,7 @@ import { getStockName } from "../constants/stocks";
 import { getIntradayChart, getPeriodChart, getStockInfo } from "../api/goApi";
 import CandleChart from "../components/chart/CandleChart";
 import OrderPanel from "../components/order/OrderPanel";
-import { fmtPrice, fmtPct, prdySign, signStr } from "../utils/format";
+import { fmtPrice, fmtPct } from "../utils/format";
 import { useWebSocket } from "../hooks/useWebSocket";
 import styles from "./StockDetailPage.module.css";
 const INTRADAY_TFS = ["1m", "5m", "10m", "30m"];
@@ -22,36 +22,40 @@ const TF_LABELS = {
   Y: "년",
 };
 
-function TrendIcon({ up }) {
-  return up ? (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-      <polyline points="17 6 23 6 23 12" />
-    </svg>
-  ) : (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
-      <polyline points="17 18 23 18 23 12" />
-    </svg>
-  );
+function TrendIcon({ sign }) {
+  if (sign === "up")
+    return (
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+        <polyline points="17 6 23 6 23 12" />
+      </svg>
+    );
+  if (sign === "down")
+    return (
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
+        <polyline points="17 18 23 18 23 12" />
+      </svg>
+    );
+  return null;
 }
 
 export default function StockDetailPage() {
@@ -70,6 +74,8 @@ export default function StockDetailPage() {
   const [chartLoading, setChartLoading] = useState(false);
   const [orderDone, setOrderDone] = useState(null);
 
+  const sign = tick?.prdyCtrt > 0 ? "up" : tick?.prdyCtrt < 0 ? "down" : "flat";
+
   useWebSocket([code], { subscribeAccount: false });
 
   useEffect(() => {
@@ -84,22 +90,21 @@ export default function StockDetailPage() {
             stckHgpr: res.stckHgpr,
             stckLwpr: res.stckLwpr,
             acmlVol: res.acmlVol,
-            volume: res.volume,
+            cntgVol: res.volume,
+            mKopCode: res.mKopCode,
             ts: res.ts,
           });
         }
       })
-      .catch(() => {
-        // seed 실패 시 빈 화면으로 시작 (WS 틱으로 나중에 채워짐)
-      });
+      .catch(() => {});
   }, [code, seedPrice]);
 
   const name = getStockName(code);
-  const dir = prdySign(tick?.prdyVrssSign);
+
   const priceColor =
-    dir === "up"
+    sign === "up"
       ? "var(--red)"
-      : dir === "down"
+      : sign === "down"
         ? "var(--blue)"
         : "var(--text-secondary)";
 
@@ -130,7 +135,6 @@ export default function StockDetailPage() {
   }, [tf, fetchChart]);
 
   const handleOrderSuccess = (result) => {
-    setOrderDone(`주문 접수 완료 (${result?.orderStatus ?? "PENDING"})`);
     setTimeout(() => setOrderDone(null), 4000);
   };
 
@@ -156,7 +160,6 @@ export default function StockDetailPage() {
 
       <div className={styles.layout}>
         <div className={styles.leftCol}>
-          {/* 종목 헤더 카드 */}
           <div className={styles.infoCard}>
             <div className={styles.infoTop}>
               <div>
@@ -194,8 +197,8 @@ export default function StockDetailPage() {
                   className={styles.priceChange}
                   style={{ color: priceColor }}
                 >
-                  <TrendIcon up={dir === "up"} />
-                  {signStr(tick.prdyVrssSign)}
+                  <TrendIcon sign={sign} />
+                  {sign === "up" ? "▲" : sign === "down" ? "▼" : ""}
                   {fmtPrice(tick.prdyVrss)}원 ({fmtPct(tick.prdyCtrt)})
                 </div>
               )}
@@ -209,11 +212,6 @@ export default function StockDetailPage() {
                 ["고가", tick?.stckHgpr, "var(--red)"],
                 ["저가", tick?.stckLwpr, "var(--blue)"],
                 [
-                  "체결 거래량 ",
-                  tick?.volume ? `${tick.volume.toLocaleString()}주` : null,
-                  null,
-                ],
-                [
                   "누적 거래량",
                   tick?.acmlVol ? `${tick.acmlVol.toLocaleString()}주` : null,
                   null,
@@ -221,7 +219,7 @@ export default function StockDetailPage() {
               ].map(
                 ([label, val, color]) =>
                   val != null && (
-                    <div key={label} className={styles.statItem}>
+                    <div key={label}>
                       <div className={styles.statLabel}>{label}</div>
                       <div
                         className={styles.statValue}
@@ -237,7 +235,6 @@ export default function StockDetailPage() {
             </div>
           </div>
 
-          {/* 차트 카드 */}
           <div className={styles.chartCard}>
             <h3 className={styles.chartTitle}>가격 차트</h3>
             <div className={styles.tfRow}>
@@ -263,7 +260,6 @@ export default function StockDetailPage() {
           </div>
         </div>
 
-        {/* 우측: 주문 패널 (데스크탑) */}
         <div className={styles.rightCol}>
           <OrderPanel
             stockCode={code}
@@ -273,7 +269,6 @@ export default function StockDetailPage() {
           />
         </div>
 
-        {/* 모바일: 하단 버튼 */}
         <div className={styles.mobileOrderBar}>
           <OrderPanel
             stockCode={code}
@@ -284,8 +279,6 @@ export default function StockDetailPage() {
           />
         </div>
       </div>
-
-      {orderDone && <div className={styles.toast}>{orderDone}</div>}
     </div>
   );
 }

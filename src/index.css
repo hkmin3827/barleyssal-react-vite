@@ -9,7 +9,6 @@
 }
 
 :root {
-  /* ── 피그마 색상 토큰 ── */
   --white: #ffffff;
   --bg: #f8f9fa;
   --bg-subtle: #f1f3f5;
@@ -98,7 +97,6 @@ select {
   border-radius: 2px;
 }
 
-/* ── 숫자 색상 ── */
 .up {
   color: var(--red);
 }
@@ -109,7 +107,6 @@ select {
   color: var(--text-secondary);
 }
 
-/* ── 공통 카드 ── */
 .card {
   background: var(--white);
   border: 1px solid var(--border);
@@ -118,7 +115,6 @@ select {
   padding: 20px;
 }
 
-/* ── 페이지 컨테이너 ── */
 .page {
   min-height: 100dvh;
   padding-top: var(--topbar-h);
@@ -132,7 +128,6 @@ select {
   padding-bottom: calc(var(--bottomnav-h) + 12px);
 }
 
-/* ── 공통 버튼 ── */
 .btn-primary {
   background: var(--blue);
   color: #fff;
@@ -160,7 +155,6 @@ select {
   background: var(--bg-subtle);
 }
 
-/* ── 로딩 스피너 ── */
 @keyframes spin {
   to {
     transform: rotate(360deg);

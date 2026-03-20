@@ -9,7 +9,7 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     hmr: {
-      port: 5173, // HMR 포트도 강제로 5173으로 묶으세요.
+      port: 5173,
     },
     proxy: {
       "/api/chart": { target: "http://localhost:4000", changeOrigin: true },

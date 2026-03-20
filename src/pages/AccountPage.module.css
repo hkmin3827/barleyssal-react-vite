@@ -34,7 +34,6 @@
   }
 }
 
-/* 파란 총자산 카드 */
 .totalCard {
   background: var(--blue);
   border-radius: var(--radius-lg);
@@ -66,7 +65,6 @@
   opacity: 0.8;
 }
 
-/* 일반 정보 카드 */
 .infoCard {
   background: var(--white);
   border: 1px solid var(--border);
@@ -91,7 +89,6 @@
   color: var(--text-secondary);
 }
 
-/* 원금 설정 */
 .setPrinBtn {
   margin-top: 10px;
   font-size: 12px;
@@ -152,7 +149,6 @@
   opacity: 0.6;
 }
 
-/* 자산 분포 */
 .section {
   background: var(--white);
   border: 1px solid var(--border);
@@ -201,7 +197,6 @@
   margin-top: 2px;
 }
 
-/* 보유 종목 */
 .sectionTitle {
   font-size: 17px;
   font-weight: 600;

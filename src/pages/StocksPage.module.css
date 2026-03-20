@@ -89,7 +89,6 @@
   border-color: var(--blue) !important;
 }
 
-/* 데스크탑 테이블 */
 .tableWrap {
   display: none;
   background: var(--white);
@@ -175,7 +174,6 @@
   text-align: right;
 }
 
-/* 모바일 카드 */
 .mobileList {
   display: flex;
   flex-direction: column;
