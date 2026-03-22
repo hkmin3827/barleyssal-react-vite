@@ -13,11 +13,16 @@ function parseHourly(raw) {
   try {
     const buckets = raw?.hourlyData;
     if (!Array.isArray(buckets)) return [];
-    return buckets.map((b) => ({
-      hour: (b.hour ?? "").slice(11, 16),
-      BUY: b.bySide?.BUY ?? 0,
-      SELL: b.bySide?.SELL ?? 0,
-    }));
+    const map = new Map();
+    for (const b of buckets) {
+      const hour = (b.hour ?? "").slice(11, 16);
+      const prev = map.get(hour) ?? { BUY: 0, SELL: 0 };
+      map.set(hour, {
+        BUY: prev.BUY + (b.bySide?.BUY ?? 0),
+        SELL: prev.SELL + (b.bySide?.SELL ?? 0),
+      });
+    }
+    return Array.from(map.entries()).map(([hour, v]) => ({ hour, ...v }));
   } catch {
     return [];
   }
@@ -29,7 +34,9 @@ function parseDaily(raw) {
     if (!Array.isArray(buckets)) return [];
     return buckets.map((b) => ({
       date: (b.date ?? "").slice(0, 10),
-      count: b.executedOrders ?? 0,
+      executedCount: b.executedOrders ?? 0,
+      totalCount: b.totalOrders ?? 0,
+      rate: b.executionRate ?? 0,
     }));
   } catch {
     return [];
@@ -69,11 +76,23 @@ export default function AdminChartPage() {
         ) : (
           <div className={styles.box}>
             <div className={styles.section}>
-              <div className={styles.sectionTitle}>시간대별 매수·매도 건수</div>
+              <div className={styles.titleRow}>
+                <div className={styles.sectionTitle}>
+                  시간대별 매수·매도 건수
+                </div>
+                <span className={styles.subLabel}>
+                  Elasticsearch 기반 · 최근 14일
+                </span>
+              </div>
               <HourlyVolumeChart data={hourlyData} />
             </div>
             <div className={styles.section}>
-              <div className={styles.sectionTitle}>일별 체결 건수</div>
+              <div className={styles.titleRow}>
+                <div className={styles.sectionTitle}>일별 체결 건수</div>
+                <span className={styles.subLabel}>
+                  Elasticsearch 기반 · 최근 14일
+                </span>
+              </div>
               <DailyEfficiencyChart data={dailyData} />
             </div>
           </div>

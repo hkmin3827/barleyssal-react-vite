@@ -16,7 +16,6 @@ import {
   getTopProfitableTrades,
   getPopularStocks,
   getHourlyTradeVolume,
-  getDailyEfficiency,
 } from "../api/springApi";
 import { STOCKS } from "../constants/stocks";
 import styles from "./RankingPage.module.css";
@@ -42,24 +41,16 @@ function parseHourly(raw) {
   try {
     const buckets = raw?.hourlyData;
     if (!Array.isArray(buckets)) return [];
-    return buckets.map((b) => ({
-      hour: (b.hour ?? "").slice(11, 16),
-      매수: b.bySide?.BUY ?? 0,
-      매도: b.bySide?.SELL ?? 0,
-    }));
-  } catch {
-    return [];
-  }
-}
-
-function parseDaily(raw) {
-  try {
-    const buckets = raw?.dailyEfficiency;
-    if (!Array.isArray(buckets)) return [];
-    return buckets.map((b) => ({
-      date: (b.date ?? "").slice(0, 10),
-      체결: b.executedOrders ?? 0,
-    }));
+    const map = new Map();
+    for (const b of buckets) {
+      const hour = (b.hour ?? "").slice(11, 16);
+      const prev = map.get(hour) ?? { 매수: 0, 매도: 0 };
+      map.set(hour, {
+        매수: prev.매수 + (b.bySide?.BUY ?? 0),
+        매도: prev.매도 + (b.bySide?.SELL ?? 0),
+      });
+    }
+    return Array.from(map.entries()).map(([hour, v]) => ({ hour, ...v }));
   } catch {
     return [];
   }
@@ -69,7 +60,6 @@ const TABS = [
   { key: "popular", label: "인기 종목" },
   { key: "profit", label: "수익률 TOP" },
   { key: "hourly", label: "시간대별 거래" },
-  { key: "daily", label: "일별 체결" },
 ];
 
 export default function RankingPage() {
@@ -77,7 +67,6 @@ export default function RankingPage() {
   const [popularData, setPopularData] = useState({});
   const [topTrades, setTopTrades] = useState([]);
   const [hourlyData, setHourlyData] = useState([]);
-  const [dailyData, setDailyData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -85,13 +74,11 @@ export default function RankingPage() {
       getTopProfitableTrades(),
       getPopularStocks(),
       getHourlyTradeVolume(),
-      getDailyEfficiency(),
     ])
-      .then(([top, pop, hourly, daily]) => {
+      .then(([top, pop, hourly]) => {
         setTopTrades(Array.isArray(top) ? top : []);
         setPopularData(pop && typeof pop === "object" ? pop : {});
         setHourlyData(parseHourly(hourly));
-        setDailyData(parseDaily(daily));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -285,52 +272,11 @@ export default function RankingPage() {
                         }}
                       />
                       <Legend />
-                      <Bar
-                        dataKey="매수"
-                        fill="#dc2626"
-                        radius={[3, 3, 0, 0]}
-                      />
+                      <Bar dataKey="매수" stackId="a" fill="#dc2626" />
                       <Bar
                         dataKey="매도"
+                        stackId="a"
                         fill="#2563eb"
-                        radius={[3, 3, 0, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            )}
-
-            {tab === "daily" && (
-              <div className={styles.card}>
-                <div className={styles.cardHeader}>
-                  <span className={styles.cardTitle}>일별 체결 건수</span>
-                  <span className={styles.cardSub}>최근 14일</span>
-                </div>
-                {dailyData.length === 0 ? (
-                  <div className={styles.empty}>데이터가 없습니다.</div>
-                ) : (
-                  <ResponsiveContainer width="100%" height={320}>
-                    <BarChart
-                      data={dailyData}
-                      margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis
-                        dataKey="date"
-                        tick={{ fontSize: 10, fill: "#9ca3af" }}
-                      />
-                      <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} />
-                      <Tooltip
-                        contentStyle={{
-                          borderRadius: 10,
-                          border: "1px solid #e5e7eb",
-                          fontSize: 13,
-                        }}
-                      />
-                      <Bar
-                        dataKey="체결"
-                        fill="#4f46e5"
                         radius={[3, 3, 0, 0]}
                       />
                     </BarChart>

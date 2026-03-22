@@ -46,3 +46,11 @@
   color: var(--text-primary);
   margin-bottom: 16px;
 }
+.subLabel {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.titleRow {
+  display: flex;
+  justify-content: space-between;
+}
