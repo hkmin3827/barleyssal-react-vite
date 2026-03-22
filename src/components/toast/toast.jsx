@@ -1,5 +1,5 @@
 import { useToastStore } from "../../store/toastStore";
-import styles from "./Toast.module.css";
+import styles from "./toast.module.css";
 
 const ICONS = {
   error: (

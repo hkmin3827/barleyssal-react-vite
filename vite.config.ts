@@ -12,9 +12,11 @@ export default defineConfig({
       port: 5173,
     },
     proxy: {
-      "/api/chart": { target: "http://localhost:4000", changeOrigin: true },
-      "/api/market": { target: "http://localhost:4000", changeOrigin: true },
-      "/api/v1": { target: "http://localhost:8080", changeOrigin: true },
+      "/api": {
+        target: "https://barleyssal.duckdns.org",
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
 });
