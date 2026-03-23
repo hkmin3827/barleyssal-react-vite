@@ -76,7 +76,6 @@ export { wsSend };
 /**
  * @param {string[]} symbols
  * @param {{ subscribeAccount?: boolean }} options
- *
  */
 export function useWebSocket(symbols = [], { subscribeAccount = false } = {}) {
   const {
