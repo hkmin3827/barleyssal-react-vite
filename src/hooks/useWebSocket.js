@@ -81,6 +81,7 @@ export function useWebSocket(symbols = [], { subscribeAccount = false } = {}) {
   const {
     updatePrice,
     updateMkopCode,
+    updateLiveBar,
     setPnlData,
     addExecution,
     addCancelledExecution,
@@ -113,6 +114,7 @@ export function useWebSocket(symbols = [], { subscribeAccount = false } = {}) {
         case "PRICE_UPDATE":
           updatePrice(msg);
           if (msg.mkopCode) updateMkopCode(msg.stockCode, msg.mkopCode);
+          if (msg.ohlcv) updateLiveBar(msg.stockCode, msg.ohlcv);
           break;
 
         case "home_update":

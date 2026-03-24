@@ -180,18 +180,6 @@ spring.interceptors.request.use(async (config) => {
 
 <br/>
 
-## 🌐 배포
-
-| 환경       | URL                             | 비고             |
-| ---------- | ------------------------------- | ---------------- |
-| Production | `https://barleyssal.vercel.app` | Vercel 자동 배포 |
-
-- 테스트 계정
-  아이디 : test@stock.com
-- 테스트 계정
-  비밀번호 : test1234@
-  <br/>
-
 ## 📱 주요 기능 화면 요약
 
 | 화면          | 주요 기능                                                        |
@@ -203,3 +191,22 @@ spring.interceptors.request.use(async (config) => {
 | **관심종목**  | 종목 추가/삭제, 현재가 실시간 표시                               |
 | **랭킹**      | 등락률·거래량 기준 실시간 종목 순위                              |
 | **관리자**    | 회원 목록 페이징·검색, 활성화/비활성화, 거래 통계 차트           |
+
+---
+
+## 📱 UI images
+
+[HomePage]
+<img src="src/assets/UI-images/HomePage_web.png" alt="웹 홈" width=500>
+
+[StocksPage]
+<img src="src/assets/UI-images/StocksPage_web.png" alt="주식리스트" width=500>
+
+[StockDetailPage]
+<img src="src/assets/UI-images/StockDetailPage_web.png" alt="주식 상세" width=500>
+
+[RankingPage - 인기 매매 종목]
+<img src="src/assets/UI-images/RankingPage1_web.png" alt="랭킹(인기 매매 종목 비중)" width=500>
+
+[AccountPage - pnl]
+<img src="src/assets/UI-images/스크린샷 2026-03-24 020333.png" alt="내 자산(Pnl)" width=500>

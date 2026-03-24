@@ -17,6 +17,7 @@ export default function CandleChart({
   data = [],
   mode = "intraday",
   height = 340,
+  liveBar,
 }) {
   const containerRef = useRef(null);
   const chartRef = useRef(null);
@@ -25,7 +26,6 @@ export default function CandleChart({
 
   const buildSeries = useCallback(() => {
     if (!containerRef.current) return;
-    // destroy previous
     if (chartRef.current) {
       chartRef.current.remove();
       chartRef.current = null;
@@ -197,10 +197,37 @@ export default function CandleChart({
     }
   }, [data, mode]);
 
+  useEffect(() => {
+    if (!liveBar || !candleRef.current || !volRef.current) return;
+    if (mode !== "intraday") return;
+
+    const utcSec = parseIntraTime(liveBar.t);
+    if (!utcSec) return;
+
+    const tzOffsetSec = new Date().getTimezoneOffset() * 60;
+    const time = utcSec - tzOffsetSec;
+
+    const o = Number(liveBar.o ?? 0);
+    const h = Number(liveBar.h ?? 0);
+    const l = Number(liveBar.l ?? 0);
+    const c = Number(liveBar.c ?? 0);
+    const v = Number(liveBar.v ?? 0);
+
+    if (!o || !c) return;
+
+    try {
+      candleRef.current.update({ time, open: o, high: h, low: l, close: c });
+      volRef.current.update({
+        time,
+        value: v,
+        color: c >= o ? "rgba(255,61,90,0.35)" : "rgba(61,139,255,0.35)",
+      });
+    } catch {}
+  }, [liveBar, mode]);
+
   return <div ref={containerRef} className={styles.chart} style={{ height }} />;
 }
 
-/** 'YYYYMMDDHHmm' → Unix seconds (KST) */
 function parseIntraTime(t) {
   if (!t || t.length < 12) return null;
   const d = new Date(

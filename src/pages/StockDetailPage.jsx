@@ -63,6 +63,7 @@ export default function StockDetailPage() {
   const navigate = useNavigate();
 
   const tick = useMarketStore((s) => s.prices[code]);
+  const liveBar = useMarketStore((s) => s.liveBars[code]);
   const seedPrice = useMarketStore((s) => s.seedPrice);
   const isOpen = useMarketStore((s) => s.isMarketOpen(code));
   const isWatched = useWatchlistStore((s) => s.isWatched(code));
@@ -254,7 +255,12 @@ export default function StockDetailPage() {
               ) : chartData.length === 0 ? (
                 <div className={styles.noData}>차트 데이터가 없습니다.</div>
               ) : (
-                <CandleChart data={chartData} mode={chartMode} height={280} />
+                <CandleChart
+                  data={chartData}
+                  mode={chartMode}
+                  height={280}
+                  liveBar={chartMode === "intraday" ? liveBar : undefined}
+                />
               )}
             </div>
           </div>

@@ -76,8 +76,8 @@ export default function HomePage() {
   }));
   const pieTotal = pieData.reduce((sum, d) => sum + d.value, 0);
 
-  const topByBuyVol = topBuyVolume[0]; // 매수 비중 1위
-  const topByChange = topChangeRate[0]; // 등락률 1위
+  const topByBuyVol = topBuyVolume[0];
+  const topByChange = topChangeRate[0];
 
   return (
     <div className={styles.page}>
@@ -98,7 +98,7 @@ export default function HomePage() {
             ) : (
               <>
                 <div className={styles.pieWrap}>
-                  <ResponsiveContainer width="100%" height={240}>
+                  <ResponsiveContainer width="100%" height={320}>
                     <PieChart>
                       <Pie
                         data={pieData}

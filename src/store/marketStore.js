@@ -3,8 +3,10 @@ import { create } from "zustand";
 export const useMarketStore = create((set, get) => ({
   prices: {}, // stockInfo 스냅샷
 
-  mkopCodes: {}, // PnL 데이터 (Go 서버 PNL_UPDATE 원형 그대로 저장)
-  pnlData: null, // 최신 체결 이력
+  liveBars: {},
+
+  mkopCodes: {},
+  pnlData: null,
   executions: [],
 
   cancelledExecutions: [],
@@ -69,6 +71,13 @@ export const useMarketStore = create((set, get) => ({
         mkopCodes: { ...state.mkopCodes, [stockCode]: mkopCode },
       }));
     }
+  },
+
+  updateLiveBar: (stockCode, ohlcv) => {
+    if (!stockCode || !ohlcv) return;
+    set((state) => ({
+      liveBars: { ...state.liveBars, [stockCode]: ohlcv },
+    }));
   },
 
   seedPrice: (stockCode, partialTick) => {
