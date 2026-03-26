@@ -85,6 +85,7 @@ export default function RankingPage() {
     setTopTrades([]);
     setPopularData({});
     setHourlyData([]);
+    setLoading(false);
   }, []);
 
   const total = Object.values(popularData).reduce((a, b) => a + Number(b), 0);
