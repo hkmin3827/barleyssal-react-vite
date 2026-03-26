@@ -242,11 +242,12 @@ export default function OrderPanel({
       {!isOpen && (
         <div className={styles.closedNotice}>장 운영 시간이 아닙니다.</div>
       )}
-
+      <div className={styles.closedNotice}>주문 기능 이용이 불가합니다.</div>
       <button
         className={`${styles.orderBtn} ${side === "BUY" ? styles.orderBuyBtn : styles.orderSellBtn}`}
         onClick={handleSubmit}
-        disabled={!isOpen || loading}
+        // disabled={!isOpen || loading}
+        disabled={true}
       >
         {loading ? (
           <span className="spinner-sm" />

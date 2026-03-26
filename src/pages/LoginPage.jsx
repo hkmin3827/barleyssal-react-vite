@@ -219,7 +219,8 @@ export default function LoginPage() {
               <button
                 type="submit"
                 className={styles.submit}
-                disabled={loading}
+                // disabled={loading}
+                disabled={true}
               >
                 {loading
                   ? "처리 중..."

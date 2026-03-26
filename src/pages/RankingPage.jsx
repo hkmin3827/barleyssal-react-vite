@@ -70,18 +70,21 @@ export default function RankingPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      getTopProfitableTrades(),
-      getPopularStocks(),
-      getHourlyTradeVolume(),
-    ])
-      .then(([top, pop, hourly]) => {
-        setTopTrades(Array.isArray(top) ? top : []);
-        setPopularData(pop && typeof pop === "object" ? pop : {});
-        setHourlyData(parseHourly(hourly));
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    // Promise.all([
+    //   getTopProfitableTrades(),
+    //   getPopularStocks(),
+    //   getHourlyTradeVolume(),
+    // ])
+    //   .then(([top, pop, hourly]) => {
+    //     setTopTrades(Array.isArray(top) ? top : []);
+    //     setPopularData(pop && typeof pop === "object" ? pop : {});
+    //     setHourlyData(parseHourly(hourly));
+    //   })
+    //   .catch(() => {})
+    //   .finally(() => setLoading(false));
+    setTopTrades([]);
+    setPopularData({});
+    setHourlyData([]);
   }, []);
 
   const total = Object.values(popularData).reduce((a, b) => a + Number(b), 0);
